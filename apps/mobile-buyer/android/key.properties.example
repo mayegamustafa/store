@@ -1,0 +1,11 @@
+# Release signing config for Android — DO NOT COMMIT key.properties (only this .example file).
+# Copy this file to `key.properties` (same directory) and fill in real values on each build host.
+# CI: write key.properties from GitHub secrets at job start; never log its contents.
+#
+# storeFile must be an absolute path on the build host. On the VPS, the keystore lives at
+# /home/mustafa/total-store/android-keystore/totalstore-release.jks.
+
+storeFile=/home/mustafa/total-store/android-keystore/totalstore-release.jks
+storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
+keyAlias=totalstore
+keyPassword=REPLACE_WITH_KEY_PASSWORD

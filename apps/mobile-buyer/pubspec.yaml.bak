@@ -1,0 +1,82 @@
+name: total_store_buyer
+description: TotalStore Buyer Mobile App - Shop & Track Deliveries
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # HTTP / API
+  dio: ^5.4.3
+  retrofit: ^4.1.0
+  
+  # Auth
+  local_auth: ^2.3.0
+  google_sign_in: ^6.2.1
+  country_code_picker: ^3.0.0
+
+  # Local Storage
+  shared_preferences: ^2.2.3
+  flutter_secure_storage: ^9.0.0
+  
+  # Navigation
+  go_router: ^13.2.3
+  
+  # UI Components
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  carousel_slider: ^5.0.0
+  fl_chart: ^0.67.0
+  
+  # Maps & Location
+  google_maps_flutter: ^2.6.0
+  geolocator: ^11.0.0
+  
+  # Real-time
+  socket_io_client: ^2.0.3+1
+  
+  # Payments / Deep Links
+  url_launcher: ^6.3.0
+  
+  # Notifications
+  firebase_core: ^2.31.0
+  firebase_messaging: ^14.9.0
+  flutter_local_notifications: ^17.1.2
+  
+  # Images
+  image_picker: ^1.1.2
+  
+  # Utilities
+  intl: ^0.19.0
+  timeago: ^3.6.1
+  lottie: ^3.1.2
+  phosphor_flutter: ^2.1.0
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  retrofit_generator: ^8.1.0
+  build_runner: ^2.4.9
+  flutter_native_splash: ^2.4.7
+
+flutter_native_splash:
+  color: "#0369a1"
+  image: assets/images/app_logo.png
+  android_12:
+    color: "#0369a1"
+    image: assets/images/app_logo.png
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

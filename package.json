@@ -1,0 +1,27 @@
+{
+  "name": "total-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TotalStore - Multivendor eCommerce Platform for Uganda / East Africa",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:migrate": "turbo run db:migrate --filter=@total-store/api",
+    "db:generate": "turbo run db:generate --filter=@total-store/api",
+    "db:studio": "turbo run db:studio --filter=@total-store/api",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "proxy": "node dev-proxy.js",
+    "proxy:nginx": "docker run --rm -p 8080:8080 --network host -v $(pwd)/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro nginx:alpine"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.0.0"
+}

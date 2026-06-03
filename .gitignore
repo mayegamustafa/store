@@ -1,0 +1,99 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+*.pem
+.turbo/
+
+# Flutter
+**/android/local.properties
+**/android/key.properties
+**/android/.gradle
+**/ios/Pods/
+**/ios/.symlinks/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
+**/.dart_tool/
+
+# Prisma
+prisma/migrations/dev/
+
+# Docker
+.docker/
+
+# Android keystore (NEVER commit keystores or signing keys)
+android-keystore/
+*.jks
+*.keystore
+key.properties
+
+# Uploaded user files
+uploads/
+**/uploads/
+
+# Database backups
+backups/
+
+# IDE / tool directories
+.qodo/
+.sixth/
+.vscode/
+
+# Temporary / accidental shell-output files at root of apps/api
+apps/api/et
+apps/api/t
+apps/api/t build
+apps/api/t' | cat
+apps/api/ole.log*
+apps/api/tore*
+apps/api/t p*
+apps/api/t 2>&1*
+
+# Screenshots and design assets (not needed in repo)
+*.png
+*.svg
+!apps/**/public/**/*.png
+!apps/**/public/**/*.svg
+!apps/**/assets/**/*.png
+!apps/**/assets/**/*.svg
+
+# Large binary files — APKs and build artifacts (store in cloud storage instead)
+*.apk
+*.aab
+*.ipa
+public/downloads/
+public/apps/
+**/public/downloads/
+**/public/apps/
+**/public/*.apk
+**/public/*.aab
+
+# Java heap dumps (crash artifacts)
+*.hprof

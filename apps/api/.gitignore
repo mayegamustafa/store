@@ -1,0 +1,18 @@
+# Accidental shell-output files (terminal commands written as filenames)
+et
+t
+t build
+t' | cat
+ole.log*
+tore*
+t p*
+t 2>&1*
+
+# Built output
+dist/
+
+# Env
+.env
+
+# Uploads
+uploads/
