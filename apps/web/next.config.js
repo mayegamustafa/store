@@ -20,34 +20,41 @@ const nextConfig = {
     NEXT_PUBLIC_GOOGLE_MAPS_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || '',
   },
   async rewrites() {
+    // Upstream URLs. In local dev they point at each app's own port. On
+    // Railway (or any container platform) set them to internal service URLs:
+    //   API_UPSTREAM_URL    = http://${{api.RAILWAY_PRIVATE_DOMAIN}}:${{api.PORT}}
+    //   ADMIN_UPSTREAM_URL  = http://${{admin.RAILWAY_PRIVATE_DOMAIN}}:${{admin.PORT}}
+    //   SELLER_UPSTREAM_URL = http://${{seller.RAILWAY_PRIVATE_DOMAIN}}:${{seller.PORT}}
+    // With those set, saktech.org/ hits the buyer web and /admin, /seller,
+    // /api are transparently forwarded — one domain, path routing, no nginx.
+    const api    = process.env.API_UPSTREAM_URL    || 'http://127.0.0.1:3001';
+    const admin  = process.env.ADMIN_UPSTREAM_URL  || 'http://127.0.0.1:3002';
+    const seller = process.env.SELLER_UPSTREAM_URL || 'http://127.0.0.1:3003';
     return {
       beforeFiles: [
-        // Admin dashboard (port 3002) – no conflicting routes in web app
         {
           source: '/admin/:path*',
-          destination: 'http://127.0.0.1:3002/admin/:path*',
+          destination: `${admin}/admin/:path*`,
         },
       ],
       afterFiles: [
-        // API proxy
         {
           source: '/api/:path*',
-          destination: 'http://127.0.0.1:3001/api/:path*',
+          destination: `${api}/api/:path*`,
         },
         {
           source: '/uploads/:path*',
-          destination: 'http://127.0.0.1:3001/uploads/:path*',
+          destination: `${api}/uploads/:path*`,
         },
         {
           source: '/tracking/:path*',
-          destination: 'http://127.0.0.1:3001/tracking/:path*',
+          destination: `${api}/tracking/:path*`,
         },
       ],
       fallback: [
-        // Seller dashboard (port 3003) – fallback so web's /seller landing pages still work
         {
           source: '/seller/:path*',
-          destination: 'http://127.0.0.1:3003/seller/:path*',
+          destination: `${seller}/seller/:path*`,
         },
       ],
     };
