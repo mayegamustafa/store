@@ -77,10 +77,14 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       const { createAdapter } = require('@socket.io/redis-adapter');
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const Redis = require('ioredis');
-      const pubClient = new Redis(redisUrl, { lazyConnect: false, maxRetriesPerRequest: null });
+      // lazyConnect defers the actual connect until first command — guarantees
+      // the error handler is attached before any connection attempt runs, so a
+      // missing/unreachable Redis can't fire an uncaught 'error' event.
+      const pubClient = new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: null });
       const subClient = pubClient.duplicate();
       pubClient.on('error', (e: Error) => this.logger.error(`Redis pub error: ${e.message}`));
       subClient.on('error', (e: Error) => this.logger.error(`Redis sub error: ${e.message}`));
+      await Promise.all([pubClient.connect(), subClient.connect()]);
       server.adapter(createAdapter(pubClient, subClient));
       this.logger.log('Socket.IO Redis adapter attached — cross-process broadcast enabled');
     } catch (e: any) {

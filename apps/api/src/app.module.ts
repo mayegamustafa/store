@@ -49,24 +49,39 @@ import { HealthController } from './health/health.controller';
     // Scheduler (for escrow release, abandoned cart, flash sales)  
     ScheduleModule.forRoot(),
 
-    // Redis cache
+    // Redis cache — falls back to in-memory cache if Redis is unreachable.
+    // Deploy-hardening: a missing REDIS_URL or unreachable Redis should not
+    // crash-loop the API. Log the degradation instead.
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => {
-        const redisUrl = config.get('REDIS_URL') || 'redis://localhost:6379';
-        const url = new URL(redisUrl);
-        return {
-          store: await redisStore({
+        const redisUrl = config.get<string>('REDIS_URL');
+        // No REDIS_URL configured — use in-memory cache (single-process only).
+        if (!redisUrl) {
+          // eslint-disable-next-line no-console
+          console.warn('[Cache] REDIS_URL not set — falling back to in-memory cache. Multi-process caching disabled.');
+          return { ttl: 300_000 };
+        }
+        try {
+          const url = new URL(redisUrl);
+          const store = await redisStore({
             socket: {
               host: url.hostname,
               port: parseInt(url.port || '6379', 10),
               reconnectStrategy: (retries: number) => Math.min(retries * 100, 3000),
+              connectTimeout: 5000,
             },
             password: url.password || undefined,
-          }),
-          ttl: 300_000, // 5 minutes default
-        };
+          });
+          return { store, ttl: 300_000 };
+        } catch (e: any) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[Cache] Redis connection failed (${e?.message || e}) — falling back to in-memory cache.`,
+          );
+          return { ttl: 300_000 };
+        }
       },
       inject: [ConfigService],
     }),
