@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "TotalStore Backend API - NestJS",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
