@@ -250,6 +250,16 @@ export const adminApi = {
   // ── Delivery Tracking ─────────────────────────────────────────────────────
   getPendingDeliveries: () => api.get('/delivery/pending'),
   getOrderTracking: (orderId: string) => api.get(`/delivery/orders/${orderId}/tracking`),
+
+  // ── Public App Config (mobile + web bootstrap payload) ────────────────────
+  getPublicAppConfig: () => api.get('/config/public').then((r) => r.data),
+  updatePublicAppConfig: (data: {
+    apiBaseUrl?: string;
+    apiBackupUrl?: string | null;
+    buyerVersion?: string;
+    sellerVersion?: string;
+    riderVersion?: string;
+  }) => api.patch('/config/update', data).then((r) => r.data),
 };
 
 export default api;
