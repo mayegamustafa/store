@@ -142,7 +142,7 @@ export class SubscriptionsService {
     });
 
     // Initiate Pesapal payment using the subscription ID as the merchant reference
-    const apiUrl = this.config.get('API_URL', 'https://store.saktech.org/api/v1');
+    const apiUrl = this.config.get('API_URL', 'https://shop.saktech.org/api/v1');
     const returnUrl = `${apiUrl}/api/v1/subscriptions/callback?subscriptionId=${sub.id}`;
 
     const result = await this.pesapal.initiate({

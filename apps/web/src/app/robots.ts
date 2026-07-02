@@ -7,7 +7,7 @@
  */
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://store.saktech.org';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.saktech.org';
 
 export default function robots(): MetadataRoute.Robots {
   return {

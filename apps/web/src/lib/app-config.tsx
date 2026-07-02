@@ -19,7 +19,7 @@ interface AppConfigData {
 const DEFAULTS: AppConfigData = {
   apiBaseUrl: getRuntimeConfig().apiBaseUrl,
   apiBackupUrl: null,
-  uploadBaseUrl: 'https://store.saktech.org',
+  uploadBaseUrl: '',
   maintenanceMode: false,
   siteName: 'TotalStore',
   apps: {

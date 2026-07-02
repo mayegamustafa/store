@@ -181,7 +181,7 @@ export class SubscriptionsController {
         this.logger.error(`Subscription activation failed: ${e.message}`);
       }
     }
-    const webUrl = process.env.SELLER_WEB_URL || 'https://store.saktech.org/seller';
+    const webUrl = process.env.SELLER_WEB_URL || 'https://shop.saktech.org/seller';
     const redirectTo = `${webUrl}/subscription?status=${activated ? 'success' : 'pending'}`;
     res.redirect(302, redirectTo);
   }

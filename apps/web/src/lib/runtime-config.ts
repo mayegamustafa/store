@@ -7,7 +7,7 @@ export interface RuntimeConfig {
   maintenanceMode?: boolean;
 }
 
-const DEFAULT_API_BASE_URL = 'https://store.saktech.org/api/v1';
+const DEFAULT_API_BASE_URL = '/api/v1';
 const CACHE_KEY = 'app_config_cache';
 const REFRESH_MS = 5 * 60 * 1000;
 

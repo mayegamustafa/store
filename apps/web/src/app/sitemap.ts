@@ -12,8 +12,8 @@
  */
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://store.saktech.org';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://store.saktech.org/api/v1';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.saktech.org';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shop.saktech.org/api/v1';
 
 const STATIC_PATHS: { path: string; changeFrequency?: MetadataRoute.Sitemap[number]['changeFrequency']; priority?: number }[] = [
   { path: '', changeFrequency: 'daily', priority: 1.0 },

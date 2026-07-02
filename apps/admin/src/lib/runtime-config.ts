@@ -6,7 +6,7 @@ interface RuntimeConfig {
 }
 
 const CACHE_KEY = 'admin_app_config_cache';
-const DEFAULT_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://store.saktech.org/api/v1';
+const DEFAULT_API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 function readCached(): RuntimeConfig | null {
   if (typeof window === 'undefined') return null;
