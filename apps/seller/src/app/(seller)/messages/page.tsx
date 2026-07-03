@@ -52,7 +52,7 @@ export default function SellerMessagesPage() {
   useEffect(() => {
     const token = localStorage.getItem('sellerToken');
     if (!token) return;
-    const socket = io(`${getRuntimeWsBaseUrl()}/chat`, { transports: ['websocket'], auth: { token } });
+    const socket = io(`${getRuntimeWsBaseUrl()}/chat`, { transports: ['polling', 'websocket'], auth: { token } });
     socketRef.current = socket;
 
     socket.on('chat:message', (msg: Message) => {

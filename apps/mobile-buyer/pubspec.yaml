@@ -52,6 +52,8 @@ dependencies:
 
   # Maps & tracking
   google_maps_flutter: ^2.6.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   socket_io_client: ^2.0.3+1
 
   # Location

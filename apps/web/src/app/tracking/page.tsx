@@ -51,7 +51,7 @@ function useOrderTracking(orderId: string | null) {
       const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3001';
 
       const socket = io(`${apiBase}/tracking`, {
-        transports: ['websocket'],
+        transports: ['polling', 'websocket'],
         auth: { token },
         reconnection: true,
         reconnectionDelay: 2000,

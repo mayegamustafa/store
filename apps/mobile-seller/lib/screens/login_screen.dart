@@ -152,6 +152,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           : const Text('Sign In'),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have a store yet? ",
+                          style: TextStyle(color: AppTheme.textSecondary)),
+                      GestureDetector(
+                        onTap: () => context.go('/register'),
+                        child: const Text('Register here',
+                            style: TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

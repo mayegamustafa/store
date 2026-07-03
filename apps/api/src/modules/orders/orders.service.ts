@@ -63,6 +63,19 @@ export class OrdersService {
       cartItems = cart.items;
     }
 
+    // Every order requires a delivery address (schema: Order.addressId is
+    // NOT NULL). Fail fast with a clear message instead of a Prisma 500.
+    if (!dto.addressId) {
+      throw new BadRequestException('Please select a delivery address before placing the order');
+    }
+    const address = await this.prisma.address.findFirst({
+      where: { id: dto.addressId, userId: buyerId },
+      select: { id: true },
+    });
+    if (!address) {
+      throw new BadRequestException('Delivery address not found — please re-select your address');
+    }
+
     // Validate stock
     for (const item of cartItems) {
       const stock = item.variant ? item.variant.stock : item.product.stock;
@@ -128,18 +141,21 @@ export class OrdersService {
 
     // Transaction
     const order = await this.prisma.$transaction(async (tx) => {
+      // Prisma checked-create: nested items.create forbids raw FK scalars for
+      // the order's own relations (buyerId/addressId/couponId) — they must be
+      // connects, or the create throws "Argument `buyer` is missing".
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
-          buyerId,
-          addressId: dto.addressId || undefined,
+          buyer: { connect: { id: buyerId } },
+          address: { connect: { id: dto.addressId! } },
           paymentMethod: dto.paymentMethod,
           subtotal,
           shippingFee,
           discount,
           total,
           notes: dto.notes,
-          couponId: coupon?.id,
+          ...(coupon ? { coupon: { connect: { id: coupon.id } } } : {}),
           items: {
             create: cartItems.map((item) => {
               const price = item.variant ? Number(item.variant.price) : Number(item.product.basePrice);
@@ -149,8 +165,8 @@ export class OrdersService {
               const sellerEarning = itemSubtotal - commission;
 
               return {
-                productId: item.productId,
-                variantId: item.variantId,
+                product: { connect: { id: item.productId } },
+                ...(item.variantId ? { variant: { connect: { id: item.variantId } } } : {}),
                 sellerId: item.product.sellerId,
                 productName: item.product.name,
                 variantName: item.variant?.name,

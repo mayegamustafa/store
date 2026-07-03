@@ -67,7 +67,7 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (!token) return;
-    const socket = io(`${getRuntimeWsBaseUrl()}/chat`, { transports: ['websocket'], auth: { token } });
+    const socket = io(`${getRuntimeWsBaseUrl()}/chat`, { transports: ['polling', 'websocket'], auth: { token } });
     socketRef.current = socket;
     socket.on('chat:message', (msg: Message) => {
       setMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);

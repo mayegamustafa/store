@@ -65,7 +65,7 @@ export default function OrderTrackingPage({ params }: TrackingPageProps) {
       }).addTo(map);
 
       // Socket.IO tracking connection
-      const socket = io(`${wsUrl}/tracking`, { transports: ['websocket'] });
+      const socket = io(`${wsUrl}/tracking`, { transports: ['polling', 'websocket'] });
       socketRef.current = socket;
 
       socket.on('connect', () => {

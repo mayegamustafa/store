@@ -25,6 +25,8 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   # Maps & Location
   google_maps_flutter: ^2.6.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   geolocator: ^11.0.0
   # Real-time
   socket_io_client: ^2.0.3+1

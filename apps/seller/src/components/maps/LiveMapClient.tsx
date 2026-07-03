@@ -71,7 +71,7 @@ export default function LiveMapClient({ orderId, sellerId, adminToken, height = 
 
       // WebSocket
       const socket = io(`${getRuntimeWsBaseUrl()}/tracking`, {
-        transports: ['websocket'],
+        transports: ['polling', 'websocket'],
         auth: { token: adminToken ?? '' },
       });
       socketRef.current = socket;

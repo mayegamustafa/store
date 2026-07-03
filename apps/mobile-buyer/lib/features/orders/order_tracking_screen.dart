@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:math' show cos, sqrt, asin;
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as sio;
 import '../../core/constants.dart';
@@ -21,14 +22,13 @@ class OrderTrackingScreen extends StatefulWidget {
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   sio.Socket? _socket;
   Timer? _pollTimer;
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
+  bool _mapReady = false;
   LatLng? _riderLocation;
   LatLng? _destLocation;
-  Set<Polyline> _polylines = {};
-  Set<Marker> _markers = {};
+  List<LatLng> _routePoints = [];
   String _status = '';
   bool _connected = false;
-  BitmapDescriptor? _riderIcon;
   LatLng? _deviceLocation;
 
   final List<_Step> _steps = const [
@@ -39,12 +39,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     _Step(key: 'DELIVERED', label: 'Delivered', icon: Icons.check_circle_rounded),
   ];
 
-  String get _googleMapsApiKey => AppConfig.instance.googleMapsApiKey;
-
   @override
   void initState() {
     super.initState();
-    _loadRiderIcon();
     _initDeviceLocation();
     _connectSocket();
     _startFallbackPolling();
@@ -64,17 +61,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (!mounted) return;
       setState(() => _deviceLocation = LatLng(pos.latitude, pos.longitude));
       // Only move camera if rider hasn't arrived yet
-      if (_riderLocation == null) {
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(LatLng(pos.latitude, pos.longitude)),
-        );
+      if (_riderLocation == null && _mapReady) {
+        _mapController.move(LatLng(pos.latitude, pos.longitude), 14);
       }
     } catch (_) {}
-  }
-
-  Future<void> _loadRiderIcon() async {
-    // Use a colored circle marker for the rider — no asset needed
-    _riderIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
   }
 
   void _connectSocket() {
@@ -84,7 +74,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     _socket = sio.io(
       '$wsUrl/tracking',
       sio.OptionBuilder()
-          .setTransports(['websocket'])
+          .setTransports(['polling', 'websocket'])
           .setAuth({'token': token})
           .disableAutoConnect()
           .enableReconnection()
@@ -112,7 +102,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       final lng = (data['lng'])?.toDouble();
       if (lat == null || lng == null) return;
       setState(() => _destLocation = LatLng(lat, lng));
-      _rebuildMarkers();
       if (_riderLocation != null) _fetchRoute(_riderLocation!, _destLocation!);
     });
 
@@ -132,31 +121,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   void _updateRiderPosition(LatLng pos) {
     if (!mounted) return;
     setState(() => _riderLocation = pos);
-    _rebuildMarkers();
-    _mapController?.animateCamera(CameraUpdate.newLatLng(pos));
+    if (_mapReady && _destLocation == null) {
+      _mapController.move(pos, _mapController.camera.zoom);
+    }
     if (_destLocation != null) _fetchRoute(pos, _destLocation!);
-  }
-
-  void _rebuildMarkers() {
-    if (!mounted) return;
-    setState(() {
-      _markers = {
-        if (_riderLocation != null)
-          Marker(
-            markerId: const MarkerId('rider'),
-            position: _riderLocation!,
-            icon: _riderIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-            infoWindow: const InfoWindow(title: '🏍 Rider'),
-          ),
-        if (_destLocation != null)
-          Marker(
-            markerId: const MarkerId('destination'),
-            position: _destLocation!,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-            infoWindow: const InfoWindow(title: '📍 Delivery Address'),
-          ),
-      };
-    });
   }
 
   void _startFallbackPolling() {
@@ -177,51 +145,33 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   Future<void> _fetchRoute(LatLng from, LatLng to) async {
+    // OSRM public routing — free, no API key (OpenStreetMap ecosystem)
     try {
       final url =
-          'https://maps.googleapis.com/maps/api/directions/json'
-          '?origin=${from.latitude},${from.longitude}'
-          '&destination=${to.latitude},${to.longitude}'
-          '&mode=driving'
-          '&key=$_googleMapsApiKey';
+          'https://router.project-osrm.org/route/v1/driving/'
+          '${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
+          '?overview=full&geometries=polyline';
       final resp = await Dio().get(url, options: Options(receiveTimeout: const Duration(seconds: 10)));
       if (resp.statusCode != 200 || !mounted) return;
       final routes = resp.data['routes'] as List?;
       if (routes == null || routes.isEmpty) return;
-      final encoded = routes[0]['overview_polyline']['points'] as String?;
+      final encoded = routes[0]['geometry'] as String?;
       if (encoded == null) return;
       final points = _decodePolyline(encoded);
       if (!mounted) return;
-      setState(() {
-        _polylines = {
-          Polyline(
-            polylineId: const PolylineId('route'),
-            points: points,
-            color: AppTheme.primaryColor,
-            width: 5,
-            patterns: [],
-            endCap: Cap.roundCap,
-            startCap: Cap.roundCap,
-            jointType: JointType.round,
-          ),
-        };
-      });
+      setState(() => _routePoints = points);
       _fitMapToBounds(from, to);
     } catch (_) {}
   }
 
   void _fitMapToBounds(LatLng rider, LatLng dest) {
-    final sw = LatLng(
-      rider.latitude < dest.latitude ? rider.latitude : dest.latitude,
-      rider.longitude < dest.longitude ? rider.longitude : dest.longitude,
-    );
-    final ne = LatLng(
-      rider.latitude > dest.latitude ? rider.latitude : dest.latitude,
-      rider.longitude > dest.longitude ? rider.longitude : dest.longitude,
-    );
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngBounds(LatLngBounds(southwest: sw, northeast: ne), 80),
-    );
+    if (!_mapReady) return;
+    try {
+      _mapController.fitCamera(CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints([rider, dest]),
+        padding: const EdgeInsets.all(60),
+      ));
+    } catch (_) {}
   }
 
   /// Standard Google Maps polyline decoder (Encoded Polyline Algorithm).
@@ -256,7 +206,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     _socket?.disconnect();
     _socket?.dispose();
     _pollTimer?.cancel();
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -305,21 +255,71 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           Expanded(
             child: Stack(
               children: [
-                GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: _riderLocation ?? _deviceLocation ?? LatLng(
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _riderLocation ?? _deviceLocation ?? LatLng(
                       AppConfig.instance.defaultLat,
                       AppConfig.instance.defaultLng,
                     ),
-                    zoom: 14,
+                    initialZoom: 14,
+                    onMapReady: () => _mapReady = true,
                   ),
-                  onMapCreated: (ctrl) => setState(() => _mapController = ctrl),
-                  polylines: _polylines,
-                  markers: _markers,
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: false,
-                  mapToolbarEnabled: false,
-                  compassEnabled: false,
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.saktech.total_store_buyer',
+                    ),
+                    if (_routePoints.isNotEmpty)
+                      PolylineLayer(polylines: [
+                        Polyline(
+                          points: _routePoints,
+                          color: AppTheme.primaryColor,
+                          strokeWidth: 5,
+                        ),
+                      ]),
+                    MarkerLayer(markers: [
+                      if (_destLocation != null)
+                        Marker(
+                          point: _destLocation!,
+                          width: 44,
+                          height: 44,
+                          child: const Icon(Icons.location_pin,
+                              color: Colors.red, size: 40),
+                        ),
+                      if (_deviceLocation != null)
+                        Marker(
+                          point: _deviceLocation!,
+                          width: 20,
+                          height: 20,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                            ),
+                          ),
+                        ),
+                      if (_riderLocation != null)
+                        Marker(
+                          point: _riderLocation!,
+                          width: 40,
+                          height: 40,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black26, blurRadius: 6)
+                              ],
+                            ),
+                            child: const Icon(Icons.two_wheeler,
+                                color: Colors.white, size: 20),
+                          ),
+                        ),
+                    ]),
+                  ],
                 ),
                 // Waiting overlay when no rider location yet
                 if (_riderLocation == null)

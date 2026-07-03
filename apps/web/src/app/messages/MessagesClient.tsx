@@ -46,7 +46,7 @@ export default function MessagesClient() {
     if (!isAuthenticated) return;
     const token = localStorage.getItem('access_token');
     if (!token) return;
-    const socket = io(`${WS_URL}/chat`, { transports: ['websocket'], auth: { token } });
+    const socket = io(`${WS_URL}/chat`, { transports: ['polling', 'websocket'], auth: { token } });
     socketRef.current = socket;
 
     socket.on('chat:message', (msg: Message) => {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/splash_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/register_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/products_screen.dart';
 import '../screens/product_form_screen.dart';
@@ -23,7 +24,8 @@ class AppRouter {
         redirect: (context, state) {
           final loggedIn = auth.isAuthenticated;
           final onSplash = state.matchedLocation == '/splash';
-          final onLogin = state.matchedLocation == '/login';
+          final onLogin = state.matchedLocation == '/login' ||
+              state.matchedLocation == '/register';
           if (onSplash) return null;
           if (!loggedIn && !onLogin) return '/login';
           if (loggedIn && onLogin) return '/';
@@ -33,6 +35,7 @@ class AppRouter {
         routes: [
           GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
           GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+          GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
           ShellRoute(
             navigatorKey: _shellKey,
             builder: (context, state, child) => _Shell(child: child),

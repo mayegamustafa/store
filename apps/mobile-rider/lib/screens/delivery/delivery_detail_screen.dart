@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,13 +21,11 @@ class DeliveryDetailScreen extends StatefulWidget {
 
 class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
     with TickerProviderStateMixin {
-  String get _googleMapsApiKey => AppConfig.instance.googleMapsApiKey;
-
-  GoogleMapController? _mapCtrl;
+  final MapController _mapCtrl = MapController();
+  bool _mapReady = false;
   LatLng? _riderPos;
   LatLng? _destPos;
-  Set<Polyline> _polylines = {};
-  Set<Marker> _markers = {};
+  List<LatLng> _routePoints = [];
   String? _etaText;
   Timer? _locTimer;
   bool _actionLoading = false;
@@ -50,7 +50,6 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
       );
       if (!mounted) return;
       setState(() => _riderPos = LatLng(pos.latitude, pos.longitude));
-      _rebuildMarkers();
       _fetchRouteIfReady();
       _startTracking();
     } catch (_) {}
@@ -62,7 +61,6 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
         final pos = await Geolocator.getCurrentPosition();
         if (!mounted) return;
         setState(() => _riderPos = LatLng(pos.latitude, pos.longitude));
-        _rebuildMarkers();
         _fetchRouteIfReady();
       } catch (_) {}
     });
@@ -73,36 +71,24 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
   }
 
   Future<void> _fetchRoute(LatLng from, LatLng to) async {
+    // OSRM public routing — free, no API key (OpenStreetMap ecosystem)
     try {
       final url =
-          'https://maps.googleapis.com/maps/api/directions/json'
-          '?origin=${from.latitude},${from.longitude}'
-          '&destination=${to.latitude},${to.longitude}'
-          '&mode=driving'
-          '&key=$_googleMapsApiKey';
+          'https://router.project-osrm.org/route/v1/driving/'
+          '${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
+          '?overview=full&geometries=polyline';
       final resp = await Dio().get(url, options: Options(receiveTimeout: const Duration(seconds: 10)));
       if (resp.statusCode != 200 || !mounted) return;
       final routes = resp.data['routes'] as List?;
       if (routes == null || routes.isEmpty) return;
-      final encoded = routes[0]['overview_polyline']['points'] as String?;
-      final legs = routes[0]['legs'] as List?;
-      final duration = legs?.isNotEmpty == true ? legs![0]['duration']['value'] as int? : null;
+      final encoded = routes[0]['geometry'] as String?;
+      final durationSec = (routes[0]['duration'] as num?)?.toDouble();
       if (encoded == null) return;
-      final minutes = duration != null ? (duration / 60).round() : null;
+      final minutes = durationSec != null ? (durationSec / 60).round() : null;
       final points = _decodePolyline(encoded);
       if (!mounted) return;
       setState(() {
-        _polylines = {
-          Polyline(
-            polylineId: const PolylineId('route'),
-            points: points,
-            color: AppTheme.primary,
-            width: 6,
-            endCap: Cap.roundCap,
-            startCap: Cap.roundCap,
-            jointType: JointType.round,
-          ),
-        };
+        _routePoints = points;
         _etaText = minutes != null
             ? (minutes < 60 ? '~$minutes min away' : '~${(minutes / 60).toStringAsFixed(1)} hr away')
             : null;
@@ -112,39 +98,13 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
   }
 
   void _fitMapToBounds(LatLng rider, LatLng dest) {
-    final sw = LatLng(
-      rider.latitude < dest.latitude ? rider.latitude : dest.latitude,
-      rider.longitude < dest.longitude ? rider.longitude : dest.longitude,
-    );
-    final ne = LatLng(
-      rider.latitude > dest.latitude ? rider.latitude : dest.latitude,
-      rider.longitude > dest.longitude ? rider.longitude : dest.longitude,
-    );
-    _mapCtrl?.animateCamera(
-      CameraUpdate.newLatLngBounds(LatLngBounds(southwest: sw, northeast: ne), 80),
-    );
-  }
-
-  void _rebuildMarkers() {
-    if (!mounted) return;
-    setState(() {
-      _markers = {
-        if (_riderPos != null)
-          Marker(
-            markerId: const MarkerId('rider'),
-            position: _riderPos!,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-            infoWindow: const InfoWindow(title: '🏍 You'),
-          ),
-        if (_destPos != null)
-          Marker(
-            markerId: const MarkerId('destination'),
-            position: _destPos!,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-            infoWindow: const InfoWindow(title: '📍 Delivery Address'),
-          ),
-      };
-    });
+    if (!_mapReady) return;
+    try {
+      _mapCtrl.fitCamera(CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints([rider, dest]),
+        padding: const EdgeInsets.all(60),
+      ));
+    } catch (_) {}
   }
 
   List<LatLng> _decodePolyline(String encoded) {
@@ -173,7 +133,7 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
   @override
   void dispose() {
     _locTimer?.cancel();
-    _mapCtrl?.dispose();
+    _mapCtrl.dispose();
     super.dispose();
   }
 
@@ -186,11 +146,6 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
     final lng = double.tryParse(addr['longitude']?.toString() ?? '') ??
         double.tryParse(addr['lng']?.toString() ?? '') ?? defLng;
     return LatLng(lat, lng);
-  }
-
-  void _onMapCreated(GoogleMapController ctrl) {
-    _mapCtrl = ctrl;
-    if (_riderPos != null && _destPos != null) _fetchRoute(_riderPos!, _destPos!);
   }
 
   Future<void> _doAction(Future<bool> Function(String) action, String successMsg) async {
@@ -268,11 +223,8 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
         _destPos = _parseAddress(addr);
         // Kick route fetch the first time destPos is resolved
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_destPos != null && _riderPos != null && _polylines.isEmpty) {
-            _rebuildMarkers();
+          if (_destPos != null && _riderPos != null && _routePoints.isEmpty) {
             _fetchRoute(_riderPos!, _destPos!);
-          } else if (_destPos != null && _markers.isEmpty) {
-            _rebuildMarkers();
           }
         });
 
@@ -285,19 +237,74 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
               SliverAppBar(
                 expandedHeight: 260,
                 pinned: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/deliveries');
+                    }
+                  },
+                ),
                 title: Text(orderNum),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     children: [
-                      GoogleMap(
-                        initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
-                        onMapCreated: _onMapCreated,
-                        polylines: _polylines,
-                        markers: _markers,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                        compassEnabled: false,
+                      FlutterMap(
+                        mapController: _mapCtrl,
+                        options: MapOptions(
+                          initialCenter: mapCenter,
+                          initialZoom: 14,
+                          onMapReady: () {
+                            _mapReady = true;
+                            if (_riderPos != null && _destPos != null) {
+                              _fitMapToBounds(_riderPos!, _destPos!);
+                            }
+                          },
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.saktech.mobile_rider',
+                          ),
+                          if (_routePoints.isNotEmpty)
+                            PolylineLayer(polylines: [
+                              Polyline(
+                                points: _routePoints,
+                                color: AppTheme.primary,
+                                strokeWidth: 5,
+                              ),
+                            ]),
+                          MarkerLayer(markers: [
+                            if (_destPos != null)
+                              Marker(
+                                point: _destPos!,
+                                width: 44,
+                                height: 44,
+                                child: const Icon(Icons.location_pin,
+                                    color: Colors.red, size: 40),
+                              ),
+                            if (_riderPos != null)
+                              Marker(
+                                point: _riderPos!,
+                                width: 40,
+                                height: 40,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 3),
+                                    boxShadow: const [
+                                      BoxShadow(color: Colors.black26, blurRadius: 6)
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.two_wheeler,
+                                      color: Colors.white, size: 20),
+                                ),
+                              ),
+                          ]),
+                        ],
                       ),
                       // ETA chip overlay
                       if (_etaText != null)

@@ -7,6 +7,7 @@ import '../../core/navigation/navigator_key.dart';
 import '../../core/theme/app_theme.dart';
 import '../../screens/splash_screen.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../screens/auth/register_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/delivery/delivery_detail_screen.dart';
 import '../../screens/earnings/earnings_screen.dart';
@@ -20,7 +21,8 @@ class AppRouter {
     redirect: (context, state) {
       final loggedIn = auth.isAuthenticated;
       final onSplash = state.matchedLocation == '/splash';
-      final onAuth = state.matchedLocation == '/login';
+      final onAuth = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register';
       if (onSplash) return null;
       if (!loggedIn && !onAuth) return '/login';
       if (loggedIn && onAuth) return '/';
@@ -30,6 +32,7 @@ class AppRouter {
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       ShellRoute(
         builder: (context, state, child) =>
             _Shell(child: child, location: state.matchedLocation),
@@ -87,8 +90,9 @@ class _ShellState extends State<_Shell> {
   @override
   Widget build(BuildContext context) {
     final hideNav = widget.location.startsWith('/deliveries/');
+    // NOT extendBody: content must never render under the floating nav —
+    // it was hiding buttons and list items at the bottom of every tab.
     return Scaffold(
-      extendBody: true,
       body: widget.child,
       bottomNavigationBar: hideNav ? null : _buildFloatingNav(),
     );

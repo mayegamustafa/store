@@ -655,7 +655,7 @@ class _DeliveryCardState extends State<_DeliveryCard>
             borderRadius: BorderRadius.circular(16),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              onTap: () => context.go('/deliveries/$deliveryId'),
+              onTap: () => context.push('/deliveries/$deliveryId'),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),

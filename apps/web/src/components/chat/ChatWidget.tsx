@@ -37,7 +37,7 @@ export function ChatWidget() {
     if (!token) return;
 
     const socket = io(`${WS_URL}/chat`, {
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       auth: { token },
     });
     socketRef.current = socket;

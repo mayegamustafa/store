@@ -43,6 +43,14 @@ const nextConfig = {
           destination: `${api}/api/:path*`,
         },
         {
+          // Socket.io handshake + HTTP long-polling. Next's rewrite proxy
+          // cannot forward WebSocket upgrades, so clients must include the
+          // 'polling' transport — websocket-only sockets can never connect
+          // through this gateway.
+          source: '/socket.io/:path*',
+          destination: `${api}/socket.io/:path*`,
+        },
+        {
           source: '/uploads/:path*',
           destination: `${api}/uploads/:path*`,
         },
