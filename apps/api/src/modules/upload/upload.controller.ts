@@ -21,7 +21,7 @@ export class UploadController {
   async uploadSingle(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided');
     this.validateFile(file);
-    const url = this.uploadService.fileUrl(file);
+    const url = await this.uploadService.store(file);
     return { url };
   }
 
@@ -31,18 +31,18 @@ export class UploadController {
   async uploadMultiple(@UploadedFiles() files: Express.Multer.File[]) {
     if (!files?.length) throw new BadRequestException('No files provided');
     files.forEach((f) => this.validateFile(f));
-    const urls = this.uploadService.fileUrls(files);
+    const urls = await this.uploadService.storeMany(files);
     return { urls };
   }
 
   @Delete('file')
-  deleteFile(@Query('filename') filename: string) {
+  async deleteFile(@Query('filename') filename: string) {
     if (!filename) throw new BadRequestException('Filename required');
     // Prevent path traversal
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       throw new BadRequestException('Invalid filename');
     }
-    this.uploadService.deleteFile(filename);
+    await this.uploadService.deleteFile(filename);
     return { ok: true };
   }
 
