@@ -88,6 +88,17 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(_channel);
 
+    // Channel targeted by the SERVER's FCM pushes (channelId 'totalstore_high').
+    // Without it Android downgrades pushes to silent tray entries — no popup.
+    await androidPlugin?.createNotificationChannel(const AndroidNotificationChannel(
+      'totalstore_high',
+      'TotalStore Alerts',
+      description: 'New deliveries, order updates and earnings.',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    ));
+
     const initSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(

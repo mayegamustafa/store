@@ -52,6 +52,18 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
+    // Channel targeted by the SERVER's FCM pushes (channelId 'totalstore_high').
+    await _localNotifs
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(const AndroidNotificationChannel(
+          'totalstore_high',
+          'TotalStore Alerts',
+          description: 'Orders, payments and important updates.',
+          importance: Importance.max,
+          playSound: true,
+          enableVibration: true,
+        ));
+
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
     FirebaseMessaging.onMessageOpenedApp.listen((msg) {
       debugPrint('[Seller Notification] Opened app from: ${msg.data}');

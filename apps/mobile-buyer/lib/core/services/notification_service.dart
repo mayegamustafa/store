@@ -62,6 +62,19 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
+    // Channel targeted by the SERVER's FCM pushes (channelId 'totalstore_high').
+    // Without it Android downgrades pushes to silent tray entries — no popup.
+    await _localNotifs
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(const AndroidNotificationChannel(
+          'totalstore_high',
+          'TotalStore Alerts',
+          description: 'Orders, payments, deliveries and important updates.',
+          importance: Importance.max,
+          playSound: true,
+          enableVibration: true,
+        ));
+
     // Listen to foreground messages
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
 
