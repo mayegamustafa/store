@@ -8,7 +8,8 @@ import { useAuthStore } from '@/stores/auth.store';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001';
+// Same origin by default: the web gateway proxies /socket.io to the API.
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || '';
 
 interface Participant { id: string; firstName: string; lastName: string; avatar?: string; role: string; phone?: string; }
 interface Message { id: string; body: string; type: string; senderId: string; sender: Participant; createdAt: string; mediaUrl?: string; conversationId?: string; }

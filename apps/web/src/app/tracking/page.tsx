@@ -48,7 +48,8 @@ function useOrderTracking(orderId: string | null) {
     const connect = async () => {
       const { io } = await import('socket.io-client');
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') || '' : '';
-      const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3001';
+      // Same origin by default: the web gateway proxies /socket.io to the API.
+      const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || '';
 
       const socket = io(`${apiBase}/tracking`, {
         transports: ['polling', 'websocket'],

@@ -17,7 +17,8 @@ export default function OrderTrackingPage({ params }: TrackingPageProps) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
   const riderMarkerRef = useRef<any>(null);
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001';
+  // Same origin by default: the web gateway proxies /socket.io to the API.
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || '';
 
   const steps = [
     { key: 'PENDING', label: 'Order Placed', icon: Package },

@@ -9,7 +9,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001';
+// Same origin by default: the web gateway proxies /socket.io to the API.
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || '';
 
 type ConvType = 'BUYER_SELLER' | 'BUYER_RIDER' | 'ADMIN_SUPPORT' | 'ORDER_GROUP';
 
