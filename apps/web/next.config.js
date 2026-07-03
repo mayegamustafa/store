@@ -47,6 +47,15 @@ const nextConfig = {
           // cannot forward WebSocket upgrades, so clients must include the
           // 'polling' transport — websocket-only sockets can never connect
           // through this gateway.
+          //
+          // Next 308-redirects '/socket.io/' to '/socket.io' (trailing-slash
+          // normalization) BEFORE rewrites run, so the bare path must be
+          // matched and the destination must restore the trailing slash —
+          // engine.io's path check requires it.
+          source: '/socket.io',
+          destination: `${api}/socket.io/`,
+        },
+        {
           source: '/socket.io/:path*',
           destination: `${api}/socket.io/:path*`,
         },
