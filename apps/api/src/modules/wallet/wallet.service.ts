@@ -34,6 +34,7 @@ export class WalletService {
   }
 
   async creditBuyer(userId: string, amount: number, description: string, reference?: string) {
+    this.assertPositive(amount);
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.update({
         where: { id: userId },
@@ -55,16 +56,21 @@ export class WalletService {
   }
 
   async debitBuyer(userId: string, amount: number, description: string, reference?: string) {
+    this.assertPositive(amount);
     return this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({ where: { id: userId } });
-      if (!user) throw new NotFoundException('User not found');
-      if (Number(user.walletBalance) < amount) {
-        throw new BadRequestException('Insufficient wallet balance');
-      }
-      const updated = await tx.user.update({
-        where: { id: userId },
+      // Conditional decrement: the balance check and the write are one atomic
+      // statement, so concurrent debits can't both pass a stale check and
+      // drive the balance negative (read-then-write would race).
+      const res = await tx.user.updateMany({
+        where: { id: userId, walletBalance: { gte: amount } },
         data: { walletBalance: { decrement: amount } },
       });
+      if (res.count === 0) {
+        const user = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
+        if (!user) throw new NotFoundException('User not found');
+        throw new BadRequestException('Insufficient wallet balance');
+      }
+      const updated = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { walletBalance: true } });
       const txn = await tx.walletTransaction.create({
         data: {
           userId,
@@ -105,6 +111,7 @@ export class WalletService {
   }
 
   async creditSeller(sellerId: string, amount: number, description: string, reference?: string) {
+    this.assertPositive(amount);
     return this.prisma.$transaction(async (tx) => {
       const seller = await tx.sellerProfile.update({
         where: { id: sellerId },
@@ -126,16 +133,18 @@ export class WalletService {
   }
 
   async debitSeller(sellerId: string, amount: number, description: string, reference?: string) {
+    this.assertPositive(amount);
     return this.prisma.$transaction(async (tx) => {
-      const seller = await tx.sellerProfile.findUnique({ where: { id: sellerId } });
-      if (!seller) throw new NotFoundException('Seller not found');
-      if (Number(seller.walletBalance) < amount) {
-        throw new BadRequestException('Insufficient wallet balance');
-      }
-      const updated = await tx.sellerProfile.update({
-        where: { id: sellerId },
+      const res = await tx.sellerProfile.updateMany({
+        where: { id: sellerId, walletBalance: { gte: amount } },
         data: { walletBalance: { decrement: amount } },
       });
+      if (res.count === 0) {
+        const seller = await tx.sellerProfile.findUnique({ where: { id: sellerId }, select: { id: true } });
+        if (!seller) throw new NotFoundException('Seller not found');
+        throw new BadRequestException('Insufficient wallet balance');
+      }
+      const updated = await tx.sellerProfile.findUniqueOrThrow({ where: { id: sellerId }, select: { walletBalance: true } });
       const txn = await tx.sellerWalletTransaction.create({
         data: {
           sellerId,
@@ -176,6 +185,7 @@ export class WalletService {
   }
 
   async creditRider(riderId: string, amount: number, description: string, reference?: string) {
+    this.assertPositive(amount);
     return this.prisma.$transaction(async (tx) => {
       const rider = await tx.riderProfile.update({
         where: { id: riderId },
@@ -197,16 +207,18 @@ export class WalletService {
   }
 
   async debitRider(riderId: string, amount: number, description: string, reference?: string) {
+    this.assertPositive(amount);
     return this.prisma.$transaction(async (tx) => {
-      const rider = await tx.riderProfile.findUnique({ where: { id: riderId } });
-      if (!rider) throw new NotFoundException('Rider not found');
-      if (Number(rider.walletBalance) < amount) {
-        throw new BadRequestException('Insufficient wallet balance');
-      }
-      const updated = await tx.riderProfile.update({
-        where: { id: riderId },
+      const res = await tx.riderProfile.updateMany({
+        where: { id: riderId, walletBalance: { gte: amount } },
         data: { walletBalance: { decrement: amount } },
       });
+      if (res.count === 0) {
+        const rider = await tx.riderProfile.findUnique({ where: { id: riderId }, select: { id: true } });
+        if (!rider) throw new NotFoundException('Rider not found');
+        throw new BadRequestException('Insufficient wallet balance');
+      }
+      const updated = await tx.riderProfile.findUniqueOrThrow({ where: { id: riderId }, select: { walletBalance: true } });
       const txn = await tx.riderWalletTransaction.create({
         data: {
           riderId,
@@ -275,6 +287,12 @@ export class WalletService {
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  private assertPositive(amount: number) {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
+    }
+  }
 
   private formatTx(txn: any) {
     return {

@@ -120,21 +120,36 @@ export class PaymentsService {
     const result = await provider.verify(payment.providerRef || '');
     this.logger.log(`Payment verification result for order ${orderId}: status=${result.status}, success=${result.success}`);
 
-    const newPaymentStatus = result.status === 'COMPLETED' ? PaymentStatus.COMPLETED
-      : result.status === 'PENDING' ? PaymentStatus.PROCESSING
-      : PaymentStatus.FAILED;
+    if (result.status !== 'COMPLETED') {
+      await this.prisma.payment.update({
+        where: { orderId },
+        data: {
+          status: result.status === 'PENDING' ? PaymentStatus.PROCESSING : PaymentStatus.FAILED,
+          failedAt: result.status === 'FAILED' ? new Date() : undefined,
+          providerPayload: result.rawResponse || {},
+        },
+      });
+      return result;
+    }
 
-    await this.prisma.payment.update({
-      where: { orderId },
+    // Atomically claim the COMPLETED transition. IPN retries and the buyer's
+    // payment-status page can call confirmPayment concurrently; only the call
+    // that flips the status may run the payout block below, otherwise sellers
+    // would be credited once per caller.
+    const claimed = await this.prisma.payment.updateMany({
+      where: { orderId, status: { not: PaymentStatus.COMPLETED } },
       data: {
-        status: newPaymentStatus,
-        confirmedAt: result.status === 'COMPLETED' ? new Date() : undefined,
-        failedAt: result.status === 'FAILED' ? new Date() : undefined,
+        status: PaymentStatus.COMPLETED,
+        confirmedAt: new Date(),
         providerPayload: result.rawResponse || {},
       },
     });
+    if (claimed.count === 0) {
+      this.logger.log(`Payment for order ${orderId} was confirmed by a concurrent request — skipping payout`);
+      return result;
+    }
 
-    if (result.status === 'COMPLETED') {
+    {
       this.logger.log(`Payment COMPLETED for order ${orderId} — updating order status`);
 
       // Update order status to PROCESSING and payment status to COMPLETED
