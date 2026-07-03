@@ -1,0 +1,42 @@
+# CodeMagic CI — one workflow per Flutter app (monorepo).
+# In the CodeMagic UI pick the workflow you want, then Start new build.
+# APKs are debug-signed unless a release keystore is configured in
+# CodeMagic's Android code signing settings (fine for direct distribution).
+
+definitions:
+  env: &flutter_env
+    flutter: stable
+    java: 17
+  scripts: &build_scripts
+    - name: Flutter pub get
+      script: flutter pub get
+    - name: Build release APK
+      script: flutter build apk --release
+
+workflows:
+  buyer-android:
+    name: Buyer App — Android APK
+    max_build_duration: 60
+    working_directory: apps/mobile-buyer
+    environment: *flutter_env
+    scripts: *build_scripts
+    artifacts:
+      - apps/mobile-buyer/build/**/outputs/**/*.apk
+
+  seller-android:
+    name: Seller App — Android APK
+    max_build_duration: 60
+    working_directory: apps/mobile-seller
+    environment: *flutter_env
+    scripts: *build_scripts
+    artifacts:
+      - apps/mobile-seller/build/**/outputs/**/*.apk
+
+  rider-android:
+    name: Rider App — Android APK
+    max_build_duration: 60
+    working_directory: apps/mobile-rider
+    environment: *flutter_env
+    scripts: *build_scripts
+    artifacts:
+      - apps/mobile-rider/build/**/outputs/**/*.apk
