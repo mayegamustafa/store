@@ -103,7 +103,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     fetch(`${apiUrl}/settings/public`)
       .then((r) => r.json())
       .then((data: SiteSettings) => {
-        const merged = { ...DEFAULTS, ...data };
+        // Unset admin settings come back as '' — don't let them clobber
+        // build-time defaults (e.g. NEXT_PUBLIC_GOOGLE_CLIENT_ID)
+        const nonEmpty = Object.fromEntries(
+          Object.entries(data || {}).filter(([, v]) => v !== '' && v != null),
+        );
+        const merged = { ...DEFAULTS, ...nonEmpty };
         setSettings(merged);
         applyThemeVars(merged);
       })

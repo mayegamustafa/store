@@ -30,6 +30,7 @@ dependencies:
   shared_preferences: ^2.3.5
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.1
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
@@ -56,3 +57,13 @@ flutter:
           weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
+
+# Launcher icon pipeline: replace assets/icon.png (square PNG, >=1024px),
+# run `dart run flutter_launcher_icons`, commit, and rebuild on CodeMagic.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon.png"
+  min_sdk_android: 21

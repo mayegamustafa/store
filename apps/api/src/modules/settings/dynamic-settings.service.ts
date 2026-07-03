@@ -101,6 +101,8 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
 
   // Integration
   { key: 'SENTRY_DSN', group: 'integrations', label: 'Sentry DSN', type: 'secret', defaultValue: '', isSecret: true },
+  // OAuth client IDs are public by design — they ship inside every frontend
+  { key: 'GOOGLE_CLIENT_ID', group: 'integrations', label: 'Google OAuth Client ID (web)', type: 'text', defaultValue: '' },
 
   // Dynamic API Configuration
   { key: 'API_BASE_URL', group: 'api_config', label: 'Primary API Base URL', type: 'url', defaultValue: 'https://shop.saktech.org/api/v1' },

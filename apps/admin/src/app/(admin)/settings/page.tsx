@@ -109,6 +109,7 @@ const GROUPS: SettingGroup[] = [
       { key: 'REVIEW_REQUIRES_PURCHASE', label: 'Reviews Require Purchase', type: 'boolean' },
       { key: 'MAX_CART_ITEMS', label: 'Max Items per Cart', type: 'number', placeholder: '50' },
       { key: 'GOOGLE_ANALYTICS_ID', label: 'Google Analytics ID', type: 'text', placeholder: 'G-XXXXXXXXXX' },
+      { key: 'GOOGLE_CLIENT_ID', label: 'Google Sign-In Client ID', type: 'text', placeholder: 'xxxxx.apps.googleusercontent.com', help: 'OAuth 2.0 Web client ID from Google Cloud Console → Credentials. Powers "Sign in with Google" on the website.' },
     ],
   },
 
