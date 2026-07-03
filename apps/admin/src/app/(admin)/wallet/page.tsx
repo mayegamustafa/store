@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { adminApi } from '@/lib/api';
 import { Wallet, ArrowDownToLine, ArrowUpFromLine, Search, User, Store, Bike } from 'lucide-react';
 
@@ -16,9 +17,21 @@ interface WalletTx {
   createdAt: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+interface OwnerResult {
+  id: string;
+  label: string;
+  sub: string;
+}
+
 export default function WalletPage() {
   const [ownerType, setOwnerType] = useState<OwnerType>('BUYER');
   const [targetId, setTargetId] = useState('');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<OwnerResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState('');
   const [loading, setLoading] = useState(false);
   const [walletData, setWalletData] = useState<{ balance: number; transactions: WalletTx[]; total: number } | null>(null);
   const [error, setError] = useState('');
@@ -29,11 +42,61 @@ export default function WalletPage() {
   const [description, setDescription] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  async function lookup() {
-    if (!targetId.trim()) return;
+  async function searchOwners() {
+    const q = query.trim();
+    if (!q) return;
+    // Power users can still paste a raw ID
+    if (UUID_RE.test(q)) {
+      setTargetId(q);
+      setSelectedLabel(q);
+      setResults([]);
+      await lookupId(q);
+      return;
+    }
+    setSearching(true); setError(''); setResults([]);
+    try {
+      let rows: OwnerResult[] = [];
+      if (ownerType === 'BUYER') {
+        const res: any = await adminApi.getUsers(1, q);
+        rows = (res?.data || []).map((u: any) => ({
+          id: u.id,
+          label: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || u.phone || u.id,
+          sub: [u.email, u.phone, u.role].filter(Boolean).join(' · '),
+        }));
+      } else if (ownerType === 'SELLER') {
+        const res: any = await adminApi.getSellers(1, undefined, q);
+        rows = (res?.data || []).map((sp: any) => ({
+          id: sp.id,
+          label: sp.storeName || sp.id,
+          sub: [sp.user?.firstName, sp.user?.email, sp.user?.phone].filter(Boolean).join(' · '),
+        }));
+      } else {
+        const res: any = await adminApi.getRiders(1, undefined, q);
+        rows = (res?.data || []).map((r: any) => ({
+          id: r.id,
+          label: [r.user?.firstName, r.user?.lastName].filter(Boolean).join(' ') || r.user?.phone || r.id,
+          sub: [r.user?.phone, r.vehicleType, r.status].filter(Boolean).join(' · '),
+        }));
+      }
+      setResults(rows);
+      if (rows.length === 0) setError(`No ${ownerType.toLowerCase()}s match "${q}"`);
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Search failed');
+    }
+    setSearching(false);
+  }
+
+  async function pickOwner(row: OwnerResult) {
+    setTargetId(row.id);
+    setSelectedLabel(row.label);
+    setResults([]);
+    await lookupId(row.id);
+  }
+
+  async function lookupId(id: string) {
     setLoading(true); setError(''); setWalletData(null);
     try {
-      const res = await adminApi.getWallet(targetId.trim(), ownerType);
+      const res = await adminApi.getWallet(id, ownerType);
       setWalletData(res as any);
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Wallet not found');
@@ -48,7 +111,7 @@ export default function WalletPage() {
       const fn = showModal === 'credit' ? adminApi.creditWallet : adminApi.debitWallet;
       await fn({ targetId: targetId.trim(), ownerType, amount: Number(amount), description: description.trim() });
       setShowModal(null); setAmount(''); setDescription('');
-      await lookup(); // Refresh
+      await lookupId(targetId); // Refresh
     } catch (e: any) {
       alert(e?.response?.data?.message || `${showModal} failed`);
     }
@@ -80,7 +143,7 @@ export default function WalletPage() {
           {ownerTabs.map(({ type, label, icon: Icon }) => (
             <button
               key={type}
-              onClick={() => { setOwnerType(type); setWalletData(null); setError(''); }}
+              onClick={() => { setOwnerType(type); setWalletData(null); setError(''); setResults([]); setSelectedLabel(''); setQuery(''); }}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 ownerType === type
                   ? 'bg-white text-primary-600 shadow-sm'
@@ -93,23 +156,70 @@ export default function WalletPage() {
           ))}
         </div>
 
-        {/* Lookup */}
-        <div className="flex gap-3 mt-4 px-5 pb-5">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              value={targetId}
-              onChange={(e) => setTargetId(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && lookup()}
-              placeholder={`Enter ${ownerType.toLowerCase()} ID (UUID)…`}
-              className="input pl-10 w-full"
-            />
+        {/* Search by name / email / phone / store */}
+        <div className="mt-4 px-5 pb-5">
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setResults([]); }}
+                onKeyDown={(e) => e.key === 'Enter' && searchOwners()}
+                placeholder={
+                  ownerType === 'SELLER'
+                    ? 'Search by store name, owner name, email or phone…'
+                    : `Search ${ownerType.toLowerCase()}s by name, email or phone…`
+                }
+                className="input pl-10 w-full"
+              />
+            </div>
+            <button onClick={searchOwners} disabled={searching || !query.trim()} className="btn btn-primary">
+              {searching ? 'Searching…' : 'Search'}
+            </button>
           </div>
-          <button onClick={lookup} disabled={loading || !targetId.trim()} className="btn btn-primary">
-            {loading ? 'Looking up…' : 'Lookup'}
-          </button>
+
+          {results.length > 0 && (
+            <div className="mt-3 border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+              {results.slice(0, 8).map((row) => (
+                <button
+                  key={row.id}
+                  onClick={() => pickOwner(row)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{row.label}</p>
+                    {row.sub && <p className="text-xs text-slate-400 mt-0.5">{row.sub}</p>}
+                  </div>
+                  <span className="text-xs text-primary-600 font-medium">Open wallet →</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedLabel && walletData && (
+            <p className="mt-3 text-sm text-slate-500">
+              Showing wallet for <span className="font-semibold text-slate-800">{selectedLabel}</span>
+            </p>
+          )}
         </div>
       </div>
+
+      {/* Withdrawal requests shortcut */}
+      <Link
+        href="/payouts"
+        className="card flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition"
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-100 rounded-xl">
+            <ArrowUpFromLine className="w-4 h-4 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Withdrawal requests</p>
+            <p className="text-xs text-slate-400">Approve or reject payout requests from sellers, riders and buyers</p>
+          </div>
+        </div>
+        <span className="text-sm text-primary-600 font-medium">Open Payouts →</span>
+      </Link>
 
       {/* Error */}
       {error && (
