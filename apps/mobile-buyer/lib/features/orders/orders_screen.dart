@@ -314,6 +314,27 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ],
               ),
+              // Live tracking shortcut for orders on the way
+              if (['PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY'].contains(order.status)) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.pushNamed(
+                        context, '/order/${order.id}/track'),
+                    icon: const Icon(Icons.location_on_outlined, size: 18),
+                    label: const Text('Track Delivery'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryColor,
+                      side: BorderSide(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.4)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

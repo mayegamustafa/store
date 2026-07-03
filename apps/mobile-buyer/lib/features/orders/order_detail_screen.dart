@@ -53,7 +53,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         _buildItemsList(order),
         const SizedBox(height: 16),
         _buildSummary(order),
-        if (order.delivery != null || ['SHIPPED', 'OUT_FOR_DELIVERY'].contains(order.status)) ...[
+        if (order.delivery != null || ['PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY'].contains(order.status)) ...[
           const SizedBox(height: 16),
           _buildTrackButton(order),
         ],

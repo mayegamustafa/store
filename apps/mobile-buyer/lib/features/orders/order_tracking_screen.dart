@@ -128,20 +128,34 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   void _startFallbackPolling() {
+    _fetchTrackingSnapshot(); // immediate first paint
     _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
-      if (_connected || !mounted) return;
+      if (!mounted) return;
+      if (_connected && _riderLocation != null) return;
+      await _fetchTrackingSnapshot();
+    });
+  }
+
+  Future<void> _fetchTrackingSnapshot() async {
       try {
         final response = await ApiService().dio.get('/delivery/orders/${widget.orderId}/tracking');
-        final data = response.data is Map ? response.data as Map<String, dynamic> : null;
+        var data = response.data is Map ? response.data as Map<String, dynamic> : null;
+        if (data != null && data['data'] is Map) data = data['data'] as Map<String, dynamic>;
         if (data == null || !mounted) return;
-        final rider = data['rider'] as Map<String, dynamic>?;
-        final lat = (rider?['currentLat'] as num?)?.toDouble();
-        final lng = (rider?['currentLng'] as num?)?.toDouble();
+        final delivery = data['delivery'] as Map<String, dynamic>?;
+        final loc = delivery?['currentLocation'] as Map<String, dynamic>?;
+        final lat = (loc?['lat'] as num?)?.toDouble();
+        final lng = (loc?['lng'] as num?)?.toDouble();
         if (lat != null && lng != null) _updateRiderPosition(LatLng(lat, lng));
+        final dest = delivery?['destination'] as Map<String, dynamic>?;
+        final dLat = (dest?['lat'] as num?)?.toDouble();
+        final dLng = (dest?['lng'] as num?)?.toDouble();
+        if (dLat != null && dLng != null && _destLocation == null && mounted) {
+          setState(() => _destLocation = LatLng(dLat, dLng));
+        }
         final orderStatus = (data['order'] as Map?)?['status'] as String?;
         if (orderStatus != null && mounted) setState(() => _status = orderStatus);
       } catch (_) {}
-    });
   }
 
   Future<void> _fetchRoute(LatLng from, LatLng to) async {
