@@ -21,6 +21,7 @@ workflows:
     environment: *flutter_env
     scripts: *build_scripts
     artifacts:
+      - build/**/outputs/**/*.apk
       - apps/mobile-buyer/build/**/outputs/**/*.apk
 
   seller-android:
@@ -30,6 +31,7 @@ workflows:
     environment: *flutter_env
     scripts: *build_scripts
     artifacts:
+      - build/**/outputs/**/*.apk
       - apps/mobile-seller/build/**/outputs/**/*.apk
 
   rider-android:
@@ -39,4 +41,5 @@ workflows:
     environment: *flutter_env
     scripts: *build_scripts
     artifacts:
+      - build/**/outputs/**/*.apk
       - apps/mobile-rider/build/**/outputs/**/*.apk
