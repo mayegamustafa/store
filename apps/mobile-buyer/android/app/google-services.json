@@ -9,6 +9,114 @@
       "client_info": {
         "mobilesdk_app_id": "1:377893065842:android:7b687948ae41ac7d5b5eeb",
         "android_client_info": {
+          "package_name": "com.sak.supervision"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlM9kk9V-E5GiOCAMdyBJ005bP9IVhXyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "377893065842-4q1pdj2tiac8jsjeh806537u943p9qfm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.supervisor.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:377893065842:android:f16a7c9d3817244f5b5eeb",
+        "android_client_info": {
+          "package_name": "com.saktech.mobile_rider"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlM9kk9V-E5GiOCAMdyBJ005bP9IVhXyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "377893065842-4q1pdj2tiac8jsjeh806537u943p9qfm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.supervisor.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:377893065842:android:0afa652acfb200ae5b5eeb",
+        "android_client_info": {
+          "package_name": "com.saktech.mobile_seller"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlM9kk9V-E5GiOCAMdyBJ005bP9IVhXyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "377893065842-4q1pdj2tiac8jsjeh806537u943p9qfm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.supervisor.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:377893065842:android:c9162a20cd64554d5b5eeb",
+        "android_client_info": {
           "package_name": "com.saktech.total_store_buyer"
         }
       },
@@ -29,6 +137,49 @@
             {
               "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "377893065842-4q1pdj2tiac8jsjeh806537u943p9qfm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.supervisor.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:377893065842:android:8d8541e197ae552b5b5eeb",
+        "android_client_info": {
+          "package_name": "com.totalstore"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlM9kk9V-E5GiOCAMdyBJ005bP9IVhXyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "377893065842-aotjgpubmrtkornf77nqqsa62k91dh67.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "377893065842-4q1pdj2tiac8jsjeh806537u943p9qfm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.supervisor.app"
+              }
             }
           ]
         }
