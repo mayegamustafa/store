@@ -290,7 +290,20 @@ export default function OrderDetailPage() {
               {order.address && (
                 <div>
                   <p className="text-xs text-slate-400 uppercase font-medium">Address</p>
-                  <p className="text-sm text-slate-900">{order.address}</p>
+                  <p className="text-sm text-slate-900">
+                    {typeof order.address === 'string'
+                      ? order.address
+                      : [
+                          order.address.fullName,
+                          order.address.addressLine1,
+                          order.address.addressLine2,
+                          order.address.city,
+                          order.address.region,
+                        ].filter(Boolean).join(', ')}
+                  </p>
+                  {typeof order.address === 'object' && order.address.phone && (
+                    <p className="text-xs text-slate-500 mt-0.5">{order.address.phone}</p>
+                  )}
                 </div>
               )}
               {order.delivery?.status && (
