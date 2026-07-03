@@ -40,7 +40,8 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'FREE_DELIVERY_THRESHOLD', group: 'commerce', label: 'Free Delivery Above (UGX)', type: 'number', defaultValue: '150000' },
   { key: 'MIN_ORDER_AMOUNT', group: 'commerce', label: 'Minimum Order Amount', type: 'number', defaultValue: '5000' },
   { key: 'PRODUCTS_PER_PAGE', group: 'commerce', label: 'Products Per Page', type: 'number', defaultValue: '24' },
-  { key: 'ESCROW_HOLD_DAYS', group: 'commerce', label: 'Escrow Hold Days', type: 'number', defaultValue: '3' },
+  { key: 'ESCROW_ENABLED', group: 'commerce', label: 'Hold Seller Earnings in Escrow', type: 'boolean', defaultValue: 'true' },
+  { key: 'ESCROW_HOLD_DAYS', group: 'commerce', label: 'Escrow Hold Days (after delivery)', type: 'number', defaultValue: '3' },
   { key: 'AUTO_CONFIRM_DELIVERY_HOURS', group: 'commerce', label: 'Auto-Confirm Delivery (hours)', type: 'number', defaultValue: '48' },
 
   // Notifications

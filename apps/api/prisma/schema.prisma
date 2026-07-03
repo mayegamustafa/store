@@ -318,6 +318,9 @@ model SellerProfile {
   totalSales       Decimal  @default(0) @db.Decimal(12, 2)
   totalOrders      Int      @default(0)
   walletBalance    Decimal  @default(0) @db.Decimal(12, 2)
+  // Earnings held in escrow (credited on payment, released to walletBalance
+  // after delivery + ESCROW_PERIOD_DAYS by the escrow cron)
+  pendingBalance   Decimal  @default(0) @db.Decimal(12, 2)
   rating           Float    @default(0)
   reviewCount      Int      @default(0)
   commissionRate   Float?   // null = use global default
@@ -648,20 +651,62 @@ model WebhookEvent {
 
 model Payout {
   id          String       @id @default(uuid())
-  sellerId    String
-  seller      SellerProfile @relation(fields: [sellerId], references: [id])
+  // Legacy seller relation kept for existing rows; new rows always set
+  // ownerType + ownerId (SELLER payouts set both for back-compat).
+  sellerId    String?
+  seller      SellerProfile? @relation(fields: [sellerId], references: [id])
+  ownerType   String       @default("SELLER") // BUYER | SELLER | RIDER
+  ownerId     String? // SellerProfile.id / RiderProfile.id / User.id per ownerType
   amount      Decimal      @db.Decimal(12, 2)
   currency    String       @default("UGX")
   method      String       // mobile_money / bank
   destination String       // phone or account number
+  destinationName String? // account holder name
+  bankName    String? // when method = bank
   status      PayoutStatus @default(PENDING)
-  reference   String?
+  reference   String? // provider/bank transaction reference set on approval
   processedAt DateTime?
   failReason  String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  @@index([status, createdAt(sort: Desc)])
+  @@index([ownerType, ownerId])
   @@map("payouts")
+}
+
+// Money owed to / earned by the platform itself (commissions, fees,
+// adjustments). Summing this table gives platform revenue — no more
+// crediting an admin's personal buyer wallet.
+model PlatformLedgerEntry {
+  id        String   @id @default(uuid())
+  type      String   // COMMISSION | SUBSCRIPTION | ADJUSTMENT
+  amount    Decimal  @db.Decimal(12, 2)
+  currency  String   @default("UGX")
+  orderId   String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt(sort: Desc)])
+  @@map("platform_ledger")
+}
+
+// One escrow hold per seller per order: created when payment completes
+// (escrow mode), releaseAt set when the order is delivered, released to the
+// seller's available balance by the hourly cron.
+model EscrowHold {
+  id        String   @id @default(uuid())
+  orderId   String
+  sellerId  String
+  amount    Decimal  @db.Decimal(12, 2)
+  status    String   @default("HELD") // HELD | RELEASED | REVERSED
+  releaseAt DateTime?
+  releasedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([orderId, sellerId])
+  @@index([status, releaseAt])
+  @@map("escrow_holds")
 }
 
 model WalletTransaction {

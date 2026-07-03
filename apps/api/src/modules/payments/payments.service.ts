@@ -8,6 +8,7 @@ import { IPaymentProvider, PaymentInitParams } from './interfaces/payment-provid
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
+import { EscrowService } from '../wallet/escrow.service';
 
 @Injectable()
 export class PaymentsService {
@@ -19,6 +20,7 @@ export class PaymentsService {
     private config: ConfigService,
     private notifications: NotificationsService,
     private walletService: WalletService,
+    private escrowService: EscrowService,
     private mtnMomo: MtnMomoProvider,
     private airtelMoney: AirtelMoneyProvider,
     private pesapal: PesapalProvider,
@@ -177,7 +179,9 @@ export class PaymentsService {
       });
 
       if (order) {
-        // Credit each seller's wallet based on order items
+        // Seller earnings: escrow (pending balance, released after delivery +
+        // ESCROW_HOLD_DAYS by the escrow cron) when enabled, else instant credit.
+        const escrowEnabled = await this.escrowService.isEnabled();
         const sellerTotals = new Map<string, number>();
         for (const item of order.items) {
           const earning = Number(item.sellerEarning) || (Number(item.subtotal) - Number(item.commission));
@@ -186,39 +190,41 @@ export class PaymentsService {
         }
 
         for (const [sellerId, amount] of sellerTotals) {
-          if (amount > 0) {
+          if (amount <= 0) continue;
+          if (escrowEnabled) {
+            await this.escrowService.hold(order.id, sellerId, amount, order.orderNumber)
+              .catch((err) => this.logger.error(`Failed to escrow for seller ${sellerId}: ${err.message}`));
+          } else {
             await this.walletService.creditSeller(
               sellerId,
               amount,
               `Earnings from order ${order.orderNumber}`,
               order.id,
             ).catch((err) => this.logger.error(`Failed to credit seller ${sellerId}: ${err.message}`));
-            this.logger.log(`Credited seller ${sellerId} with ${amount} for order ${order.orderNumber}`);
           }
         }
 
-        // Credit admin/platform commission
+        // Platform commission → platform ledger (idempotent per order)
         let totalCommission = 0;
         for (const item of order.items) {
           totalCommission += Number(item.commission) || 0;
         }
         if (totalCommission > 0) {
-          // Find the platform admin to credit
-          const admin = await this.prisma.user.findFirst({
-            where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
-            orderBy: { createdAt: 'asc' },
+          const already = await this.prisma.platformLedgerEntry.findFirst({
+            where: { type: 'COMMISSION', orderId: order.id },
             select: { id: true },
           });
-          if (admin) {
-            await this.walletService.creditBuyer(
-              admin.id,
-              totalCommission,
-              `Platform commission from order ${order.orderNumber}`,
-              `commission-${order.id}`,
-            ).catch((err) => this.logger.error(`Failed to credit admin commission: ${err.message}`));
-            this.logger.log(`Credited admin ${admin.id} with ${totalCommission} commission for order ${order.orderNumber}`);
-          } else {
-            this.logger.warn(`No admin user found to credit commission of ${totalCommission}`);
+          if (!already) {
+            await this.prisma.platformLedgerEntry.create({
+              data: {
+                type: 'COMMISSION',
+                amount: totalCommission,
+                currency: order.currency,
+                orderId: order.id,
+                note: `Commission from order ${order.orderNumber}`,
+              },
+            }).catch((err) => this.logger.error(`Failed to record commission: ${err.message}`));
+            this.logger.log(`Recorded ${totalCommission} commission for order ${order.orderNumber}`);
           }
         }
 

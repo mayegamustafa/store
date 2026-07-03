@@ -252,6 +252,12 @@ export const adminApi = {
   getPendingDeliveries: () => api.get('/delivery/pending'),
   getOrderTracking: (orderId: string) => api.get(`/delivery/orders/${orderId}/tracking`),
 
+  // ── Payout queue (withdrawals to mobile money / bank) ─────────────────────
+  getPayouts: (status?: string, page = 1) => api.get('/wallet/admin/payouts', { params: { status, page } }),
+  approvePayout: (id: string, reference?: string) => api.post(`/wallet/admin/payouts/${id}/approve`, { reference }),
+  rejectPayout: (id: string, reason: string) => api.post(`/wallet/admin/payouts/${id}/reject`, { reason }),
+  getPlatformRevenue: (page = 1) => api.get('/wallet/admin/platform-revenue', { params: { page } }),
+
   // ── Public App Config (mobile + web bootstrap payload) ────────────────────
   getPublicAppConfig: () => api.get('/config/public').then((r) => r.data),
   updatePublicAppConfig: (data: {

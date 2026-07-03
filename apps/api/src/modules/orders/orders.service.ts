@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { DynamicSettingsService } from '../settings/dynamic-settings.service';
+import { EscrowService } from '../wallet/escrow.service';
 import { ConfigService } from '@nestjs/config';
 import { OrderStatus } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
@@ -15,6 +16,7 @@ export class OrdersService {
     private notifications: NotificationsService,
     private config: ConfigService,
     private settings: DynamicSettingsService,
+    private escrow: EscrowService,
   ) {}
 
   // ── Create Order from Cart ────────────────────────────────────────────────────
@@ -309,6 +311,7 @@ export class OrdersService {
     });
 
     await this.notifications.notifyOrderCancelled(buyerId, orderId, order.orderNumber, reason).catch(() => null);
+    await this.escrow.reverseForOrder(orderId, reason || 'Order cancelled by buyer').catch(() => null);
     return updated;
   }
 
@@ -353,9 +356,13 @@ export class OrdersService {
         break;
       case OrderStatus.DELIVERED:
         this.notifications.notifyOrderDelivered(buyerId, orderId, onum).catch(() => null);
+        // Start the escrow countdown — held seller earnings release after
+        // ESCROW_HOLD_DAYS from delivery (see EscrowService cron)
+        this.escrow.scheduleRelease(orderId).catch(() => null);
         break;
       case OrderStatus.CANCELLED:
         this.notifications.notifyOrderCancelled(buyerId, orderId, onum, note).catch(() => null);
+        this.escrow.reverseForOrder(orderId, note || 'Order cancelled').catch(() => null);
         break;
     }
 

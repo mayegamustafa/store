@@ -12,6 +12,7 @@ import {
   MapPin, PlusCircle, List, Film, Radio, Monitor, Boxes, ClipboardList,
   Clock, ShoppingCart, Inbox, Newspaper, Activity, Bookmark, Layers,
   Mail, MessageCircle, PanelLeftClose, PanelLeftOpen, X, Wallet, CreditCard, BadgeCheck,
+  ArrowUpFromLine,
 } from 'lucide-react';
 
 type NavItem  = { href: string; label: string; icon: React.ElementType };
@@ -117,6 +118,7 @@ const NAV: NavEntry[] = [
   { type: 'link', href: '/reports',       label: 'Reports',          icon: BarChart3 },
   { type: 'link', href: '/analytics',     label: 'Audit Trail',      icon: Activity },
   { type: 'link', href: '/wallet',            label: 'Wallets',          icon: Wallet },
+  { type: 'link', href: '/payouts',           label: 'Payouts',          icon: ArrowUpFromLine },
   { type: 'link', href: '/payment-gateways', label: 'Payment Gateways', icon: CreditCard },
   { type: 'link', href: '/notifications',    label: 'Notifications',    icon: Bell },
   { type: 'link', href: '/support',       label: 'Support Inbox',    icon: Inbox },
