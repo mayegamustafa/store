@@ -3,11 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 String get _resolvedBaseUrl {
-  return 'https://store.saktech.org/api/v1';
+  return 'https://shop.saktech.org/api/v1';
 }
 
 class ApiService {
-  static const _baseUrl = 'https://store.saktech.org/api/v1'; // fallback
+  static const _baseUrl = 'https://shop.saktech.org/api/v1'; // fallback
   late final Dio _dio;
   final _storage = const FlutterSecureStorage();
 
@@ -132,7 +132,11 @@ class ApiService {
 
   Future<Map<String, dynamic>?> withdrawFromWallet({required double amount, required String phone}) async {
     try {
-      final res = await _dio.post('/wallet/rider/withdraw', data: {'amount': amount, 'phone': phone});
+      final res = await _dio.post('/wallet/rider/withdraw', data: {
+        'amount': amount,
+        'method': 'mobile_money',
+        'destination': phone,
+      });
       return res.data;
     } catch (e) {
       if (e is DioException && e.response != null) return {'error': e.response?.data?['message'] ?? 'Withdrawal failed'};

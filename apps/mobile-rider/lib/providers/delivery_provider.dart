@@ -87,7 +87,7 @@ class DeliveryProvider extends ChangeNotifier {
   Future<void> _connectSocket() async {
     final token = await _storage.read(key: 'riderAccessToken');
     if (token == null) return;
-    _socket = io.io('https://store.saktech.org/tracking', io.OptionBuilder()
+    _socket = io.io('https://shop.saktech.org/tracking', io.OptionBuilder()
         .setTransports(['websocket'])
         .setAuth({'token': token})
         .build());

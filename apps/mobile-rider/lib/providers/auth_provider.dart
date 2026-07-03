@@ -81,7 +81,7 @@ class AuthProvider extends ChangeNotifier {
     final refreshToken = await _storage.read(key: 'riderRefreshToken');
     if (refreshToken == null) return false;
     try {
-      final refreshDio = Dio(BaseOptions(baseUrl: 'https://store.saktech.org/api/v1'));
+      final refreshDio = Dio(BaseOptions(baseUrl: 'https://shop.saktech.org/api/v1'));
       final res = await refreshDio.post('/auth/refresh', data: {'refreshToken': refreshToken});
       final data = res.data;
       await _storage.write(key: 'riderAccessToken', value: data['accessToken']);

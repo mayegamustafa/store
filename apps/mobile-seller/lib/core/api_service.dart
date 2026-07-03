@@ -110,6 +110,21 @@ class ApiService {
 
   dynamic extractData(Response res) => _extractData(res);
 
+  /// Human-readable message from a caught Dio error (validation messages
+  /// from the API come back as string or list under `message`).
+  String errorMessage(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map) {
+        final msg = data['message'];
+        if (msg is List) return msg.join(', ');
+        if (msg is String) return msg;
+      }
+      return 'Network error';
+    }
+    return '';
+  }
+
   Future<void> setTokens(String access, String refresh) async {
     _accessToken = access;
     _refreshToken = refresh;

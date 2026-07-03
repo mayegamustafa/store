@@ -10,8 +10,8 @@ class AppConfig {
   static final AppConfig instance = AppConfig._();
   AppConfig._();
 
-  static const String _defaultApiUrl = 'https://store.saktech.org/api/v1';
-  static const String _defaultUploadUrl = 'https://store.saktech.org';
+  static const String _defaultApiUrl = 'https://shop.saktech.org/api/v1';
+  static const String _defaultUploadUrl = 'https://shop.saktech.org';
   static const String _cacheKey = 'app_config_cache';
   static const String _configEndpoint = '/config/public';
   static const Duration _refreshInterval = Duration(minutes: 5);

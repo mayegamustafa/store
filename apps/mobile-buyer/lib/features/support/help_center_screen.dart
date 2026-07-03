@@ -92,8 +92,8 @@ class HelpCenterScreen extends StatelessWidget {
                   launchUrl(Uri.parse('tel:+256700000000'));
                 }),
                 const Divider(height: 24),
-                _contactTile(Icons.language_rounded, 'Visit Website', 'store.saktech.org', () {
-                  launchUrl(Uri.parse('https://store.saktech.org'));
+                _contactTile(Icons.language_rounded, 'Visit Website', 'shop.saktech.org', () {
+                  launchUrl(Uri.parse('https://shop.saktech.org'));
                 }),
               ],
             ),

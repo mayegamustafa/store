@@ -65,6 +65,71 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Register a new seller account, then onboard the store.
+  /// Returns null on success, or an error message.
+  Future<String?> register({
+    required String firstName,
+    required String lastName,
+    required String phone,
+    String? email,
+    required String password,
+    required String storeName,
+    String? storeDescription,
+    String? storeCategory,
+  }) async {
+    try {
+      final res = await _api.dio.post('/auth/register', data: {
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+        'password': password,
+        'role': 'SELLER',
+      });
+      final data = _api.extractData(res);
+      await _api.setTokens(
+          data['accessToken'] as String, data['refreshToken'] as String);
+      _user = data['user'] as Map<String, dynamic>;
+
+      // Create the store profile (best-effort — the dashboard prompts for
+      // anything missing during onboarding)
+      try {
+        await _api.dio.post('/sellers/onboard', data: {
+          'storeName': storeName,
+          if (storeDescription != null && storeDescription.isNotEmpty)
+            'storeDescription': storeDescription,
+          if (storeCategory != null) 'storeCategory': storeCategory,
+        });
+      } catch (_) {}
+
+      NotificationService().registerTokenAfterLogin();
+      notifyListeners();
+      return null;
+    } on DioException catch (e) {
+      final msg = e.response?.data;
+      if (msg is Map) {
+        final m = msg['message'];
+        if (m is List) return m.join(', ');
+        if (m is String) return m;
+      }
+      return 'Registration failed';
+    } catch (_) {
+      return 'Network error. Try again.';
+    }
+  }
+
+  /// Re-fetch the current user (after profile edits).
+  Future<void> refreshProfile() async {
+    try {
+      final res = await _api.dio.get('/auth/me');
+      final data = _api.extractData(res);
+      if (data is Map<String, dynamic>) {
+        _user = data;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   Future<void> logout() async {
     _user = null;
     await _api.clearTokens();

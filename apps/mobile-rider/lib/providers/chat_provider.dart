@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
-String get _baseUrl => 'https://store.saktech.org/api/v1';
-String get _wsUrl => 'https://store.saktech.org';
+String get _baseUrl => 'https://shop.saktech.org/api/v1';
+String get _wsUrl => 'https://shop.saktech.org';
 
 class ChatProvider extends ChangeNotifier {
   final _storage = const FlutterSecureStorage();

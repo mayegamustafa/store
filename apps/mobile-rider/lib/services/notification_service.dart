@@ -229,7 +229,7 @@ class NotificationService {
       const storage = FlutterSecureStorage();
       final accessToken = await storage.read(key: 'riderAccessToken');
       if (accessToken == null) return;
-      const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://store.saktech.org/api/v1');
+      const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://shop.saktech.org/api/v1');
       await Dio().patch(
         '$baseUrl/auth/fcm-token',
         data: {'fcmToken': token},

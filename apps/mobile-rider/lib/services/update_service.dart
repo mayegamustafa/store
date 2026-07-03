@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// Checks /apps/version.json on the web server and prompts the user
 /// if a newer version is available.
 class UpdateService {
-  static const String _versionUrl = 'https://store.saktech.org/apps/version.json';
+  static const String _versionUrl = 'https://shop.saktech.org/apps/version.json';
   static const String _appKey = 'rider';
 
   static Future<void> checkForUpdate(BuildContext context) async {
@@ -38,7 +38,7 @@ class UpdateService {
         _showUpdateDialog(
           context,
           latestVersion: latestVersion,
-          downloadUrl: 'https://store.saktech.org$downloadUrl',
+          downloadUrl: 'https://shop.saktech.org$downloadUrl',
           changelog: changelog,
           forceUpdate: mustUpdate,
         );

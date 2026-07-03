@@ -29,9 +29,10 @@ export class WithdrawDto {
   @Min(1000, { message: 'Minimum withdrawal is 1,000 UGX' })
   amount: number;
 
-  @ApiProperty({ example: 'mobile_money', enum: ['mobile_money', 'bank'] })
+  @ApiProperty({ example: 'mobile_money', enum: ['mobile_money', 'bank'], required: false, default: 'mobile_money' })
   @IsIn(['mobile_money', 'bank'])
-  method: 'mobile_money' | 'bank';
+  @IsOptional()
+  method?: 'mobile_money' | 'bank';
 
   @ApiProperty({ example: '256770000000', required: false, description: 'Mobile money number or bank account number. Falls back to phone for older clients; one of the two is required.' })
   @IsString()
