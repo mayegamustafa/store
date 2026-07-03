@@ -22,7 +22,7 @@ import { NotificationChannel, NotificationEventType } from '@prisma/client';
 @Injectable()
 export class NotificationsService implements OnModuleInit {
   private readonly logger = new Logger(NotificationsService.name);
-  private mailer: nodemailer.Transporter;
+  private mailer: nodemailer.Transporter | null = null;
   private firebaseApp: admin.app.App | null = null;
 
   constructor(
@@ -41,11 +41,20 @@ export class NotificationsService implements OnModuleInit {
     const port = parseInt((await this.dynamicSettings.get('SMTP_PORT')) || this.config.get('SMTP_PORT', '587'), 10);
     const user = (await this.dynamicSettings.get('SMTP_USER')) || this.config.get('SMTP_USER');
     const pass = (await this.dynamicSettings.get('SMTP_PASS')) || this.config.get('SMTP_PASS');
+    if (!user || !pass) {
+      this.logger.warn('SMTP not configured (SMTP_USER/SMTP_PASS empty) — emails disabled');
+      this.mailer = null;
+      return;
+    }
     this.mailer = nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
       auth: { user, pass },
+      // Fail fast: never let a slow/unreachable SMTP server hold up a request
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
     });
   }
 
@@ -173,6 +182,7 @@ export class NotificationsService implements OnModuleInit {
   // ── Email via SMTP ────────────────────────────────────────────────────────────
 
   async sendEmail(to: string, subject: string, html: string) {
+    if (!this.mailer) return; // SMTP not configured — skip instantly
     try {
       const fromName = (await this.dynamicSettings.get('SMTP_FROM_NAME')) || this.config.get('SMTP_FROM_NAME', 'TotalStore');
       const fromEmail = (await this.dynamicSettings.get('SMTP_FROM_EMAIL')) || this.config.get('SMTP_FROM_EMAIL', 'noreply@totalstore.ug');

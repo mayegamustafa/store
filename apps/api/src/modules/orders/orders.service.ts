@@ -220,24 +220,26 @@ export class OrdersService {
       return newOrder;
     });
 
-    // Notify buyer + seller
-    const buyer = await this.prisma.user.findUnique({ where: { id: buyerId } });
-    if (buyer) {
-      await this.notifications.notifyOrderPlaced(
-        buyer.id, order.id, orderNumber, String(Math.round(subtotal - discount)),
-      ).catch(() => null);
-    }
-
-    // Notify each unique seller
-    const sellerIds = [...new Set(order.items.map((i: any) => i.sellerId).filter(Boolean))];
-    for (const sid of sellerIds) {
-      const seller = await this.prisma.sellerProfile.findUnique({ where: { id: sid as string }, select: { userId: true } });
-      if (seller?.userId) {
-        await this.notifications.notifySellerNewOrder(
-          seller.userId, order.id, orderNumber, String(Math.round(subtotal - discount)),
+    // Notify buyer + sellers strictly fire-and-forget: SMTP/SMS providers can
+    // take 30+ s to fail when unconfigured, and awaiting them made checkout
+    // time out in the browser even though the order was already created.
+    void (async () => {
+      const buyer = await this.prisma.user.findUnique({ where: { id: buyerId } });
+      if (buyer) {
+        await this.notifications.notifyOrderPlaced(
+          buyer.id, order.id, orderNumber, String(Math.round(subtotal - discount)),
         ).catch(() => null);
       }
-    }
+      const sellerIds = [...new Set(order.items.map((i: any) => i.sellerId).filter(Boolean))];
+      for (const sid of sellerIds) {
+        const seller = await this.prisma.sellerProfile.findUnique({ where: { id: sid as string }, select: { userId: true } });
+        if (seller?.userId) {
+          await this.notifications.notifySellerNewOrder(
+            seller.userId, order.id, orderNumber, String(Math.round(subtotal - discount)),
+          ).catch(() => null);
+        }
+      }
+    })().catch(() => null);
 
     return order;
   }
