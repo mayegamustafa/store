@@ -82,7 +82,7 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout and invalidate refresh tokens' })
-  logout(@CurrentUser('sub') userId: string) {
+  logout(@CurrentUser('id') userId: string) {
     return this.authService.logout(userId);
   }
 
@@ -99,7 +99,7 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Register or update FCM push notification token' })
-  updateFcmToken(@CurrentUser('sub') userId: string, @Body('fcmToken') fcmToken: string) {
+  updateFcmToken(@CurrentUser('id') userId: string, @Body('fcmToken') fcmToken: string) {
     return this.authService.updateFcmToken(userId, fcmToken);
   }
 
