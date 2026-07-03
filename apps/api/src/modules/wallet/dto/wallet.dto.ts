@@ -33,9 +33,10 @@ export class WithdrawDto {
   @IsIn(['mobile_money', 'bank'])
   method: 'mobile_money' | 'bank';
 
-  @ApiProperty({ example: '256770000000', description: 'Mobile money number or bank account number' })
+  @ApiProperty({ example: '256770000000', required: false, description: 'Mobile money number or bank account number. Falls back to phone for older clients; one of the two is required.' })
   @IsString()
-  destination: string;
+  @IsOptional()
+  destination?: string;
 
   @ApiProperty({ example: 'John Doe', required: false, description: 'Account holder name' })
   @IsString()
