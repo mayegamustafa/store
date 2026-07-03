@@ -5,11 +5,10 @@ import { useAuthStore } from '@/stores/auth.store';
 import { ExternalLink, Store, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-const SELLER_APP_URL =
-  process.env.NEXT_PUBLIC_SELLER_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:3003'
-    : 'https://seller.totalstore.ug');
+// The seller dashboard is served on this same domain at /seller/* (the web
+// app's rewrites proxy anything under /seller that isn't one of our marketing
+// pages to the seller service). A relative URL keeps this working on any host.
+const SELLER_APP_URL = process.env.NEXT_PUBLIC_SELLER_URL || '/seller/dashboard';
 
 export default function SellerDashboardRedirectPage() {
   const { user } = useAuthStore();
