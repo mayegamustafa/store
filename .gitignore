@@ -84,6 +84,11 @@ apps/api/t 2>&1*
 !apps/**/public/**/*.svg
 !apps/**/assets/**/*.png
 !apps/**/assets/**/*.svg
+# Android/iOS app resources (launcher icons, splash screens) MUST be in git —
+# CI builds fail with "resource drawable/android12splash not found" otherwise
+!apps/**/android/**/res/**/*.png
+!apps/**/android/**/res/**/*.webp
+!apps/**/ios/**/Assets.xcassets/**/*.png
 
 # Large binary files — APKs and build artifacts (store in cloud storage instead)
 *.apk
