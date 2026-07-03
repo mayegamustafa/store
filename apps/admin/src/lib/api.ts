@@ -17,7 +17,8 @@ api.interceptors.response.use(
     const isLoginRequest = err.config?.url?.includes('/auth/login');
     if (err.response?.status === 401 && typeof window !== 'undefined' && !isLoginRequest) {
       localStorage.removeItem('adminToken');
-      window.location.href = '/admin/login';
+      // window.location does NOT know about basePath, so include it here
+      window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/login`;
     }
     return Promise.reject(err);
   }

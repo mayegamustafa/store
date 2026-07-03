@@ -106,7 +106,8 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('sellerToken');
       localStorage.removeItem('sellerRefreshToken');
-      window.location.href = '/login';
+      // window.location does NOT know about basePath, so include it here
+      window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/login`;
     }
     return Promise.reject(err);
   }

@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 import { useSellerStore } from '@/stores/seller.store';
 import { Sidebar } from '@/components/Sidebar';
 import { Menu, ChevronRight } from 'lucide-react';
@@ -54,7 +52,9 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
   const [mobileOpen, setMobileOpen]   = useState(false);
 
   useEffect(() => {
-    if (!user) router.push(`${basePath}/login`);
+    // router.push already prepends basePath — passing it explicitly would
+    // double it (/seller/seller/login)
+    if (!user) router.push('/login');
   }, [user, router]);
 
   if (!user) return null;

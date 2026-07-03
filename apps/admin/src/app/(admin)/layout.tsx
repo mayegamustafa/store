@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 import { useAdminStore } from '@/stores/admin.store';
 import { Sidebar } from '@/components/Sidebar';
 import { Navbar } from '@/components/Navbar';
@@ -17,7 +15,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (_hasHydrated && !admin) {
-      router.push(`${basePath}/login`);
+      // router.push already prepends basePath — passing it explicitly would
+      // double it (/admin/admin/login)
+      router.push('/login');
     }
   }, [admin, _hasHydrated, router]);
 
