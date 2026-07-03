@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../core/theme.dart';
 import '../providers/wallet_provider.dart';
+import '../core/money.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -83,9 +84,9 @@ class _WalletScreenState extends State<WalletScreen> {
               TextField(
                 controller: amountCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                    labelText: 'Amount (UGX)',
-                    prefixIcon: Icon(Icons.payments_outlined)),
+                decoration: InputDecoration(
+                    labelText: 'Amount (${Money.code})',
+                    prefixIcon: const Icon(Icons.payments_outlined)),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -175,7 +176,7 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     final wallet = context.watch<WalletProvider>();
-    final currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
+    final currency = NumberFormat.currency(symbol: '${Money.code} ', decimalDigits: 0);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Wallet')),
@@ -366,7 +367,7 @@ class _WithdrawalTile extends StatelessWidget {
           backgroundColor: color.withValues(alpha: 0.1),
           child: Icon(icon, color: color, size: 20),
         ),
-        title: Text('UGX ${NumberFormat('#,###').format(amount)} → $destination',
+        title: Text('${Money.fmt(amount)} → $destination',
             style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
         subtitle: Text(
           status == 'FAILED' && payout['failReason'] != null
@@ -412,7 +413,7 @@ class _TransactionTile extends StatelessWidget {
             style:
                 const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
         trailing: Text(
-          '${isCredit ? '+' : '-'} UGX ${NumberFormat('#,###').format(amount)}',
+          '${isCredit ? '+' : '-'} ${Money.fmt(amount)}',
           style: TextStyle(
               color: isCredit ? AppTheme.success : AppTheme.error,
               fontWeight: FontWeight.w600,

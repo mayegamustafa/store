@@ -10,9 +10,13 @@ double safeDouble(dynamic value, [double fallback = 0]) {
   return fallback;
 }
 
+/// Set by SettingsProvider from the admin CURRENCY setting (or the user's
+/// chosen display currency). Screens should never hardcode a currency code.
+String defaultCurrencyCode = 'UGX';
+
 String formatCurrency(double amount, {String? currency}) {
   final formatter = NumberFormat('#,##0', 'en_US');
-  return '${currency ?? 'UGX'} ${formatter.format(amount.round())}';
+  return '${currency ?? defaultCurrencyCode} ${formatter.format(amount.round())}';
 }
 
 String formatDate(DateTime date) {

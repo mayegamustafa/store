@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/orders_provider.dart';
 import '../providers/wallet_provider.dart';
+import '../core/money.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -31,7 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final auth = context.watch<AuthProvider>();
     final orders = context.watch<OrdersProvider>();
     final wallet = context.watch<WalletProvider>();
-    final currency = NumberFormat.currency(symbol: 'KES ', decimalDigits: 0);
+    final currency = NumberFormat.currency(symbol: '${Money.code} ', decimalDigits: 0);
 
     final pending =
         orders.orders.where((o) => o['status'] == 'PENDING').length;
@@ -271,7 +272,7 @@ class _OrderTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('KES $total',
+            Text(Money.fmt(total),
                 style:
                     const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             Container(

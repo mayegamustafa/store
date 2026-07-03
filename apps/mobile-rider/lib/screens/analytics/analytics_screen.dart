@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/api/api_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/delivery_provider.dart';
+import '../../core/money.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -31,7 +32,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   String _fmt(dynamic val) {
     final n = double.tryParse(val.toString()) ?? 0;
-    return 'UGX ${n.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+    return Money.fmt(n);
   }
 
   @override

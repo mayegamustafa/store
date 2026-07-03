@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../core/theme.dart';
 import '../providers/orders_provider.dart';
+import '../core/money.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -171,7 +172,7 @@ class _OrderCard extends StatelessWidget {
                   Text('$itemCount item${itemCount != 1 ? 's' : ''}',
                       style: const TextStyle(
                           color: AppTheme.textSecondary, fontSize: 13)),
-                  Text('KES $total',
+                  Text(Money.fmt(total),
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 16)),
                 ],

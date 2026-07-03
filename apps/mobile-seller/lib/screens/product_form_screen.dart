@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import '../core/theme.dart';
 import '../core/api_service.dart';
 import '../providers/products_provider.dart';
+import '../core/money.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final String? productId;
@@ -211,7 +212,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         child: TextFormField(
                           controller: _priceCtrl,
                           decoration:
-                              const InputDecoration(labelText: 'Price (KES)'),
+                              InputDecoration(labelText: 'Price (${Money.code})'),
                           keyboardType: TextInputType.number,
                           validator: (v) =>
                               (v == null || double.tryParse(v) == null)

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../core/api_service.dart';
+import '../core/money.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  /// Platform currency (admin setting) — readable anywhere via [Money.code].
   final _api = ApiService();
   String _currency = 'UGX';
   String _sellerLogoUrl = '';
@@ -19,6 +21,7 @@ class SettingsProvider extends ChangeNotifier {
       final data = _api.extractData(res);
       if (data is Map) {
         _currency = (data['DEFAULT_CURRENCY'] ?? data['CURRENCY'] ?? 'UGX').toString();
+        Money.code = _currency;
         _sellerLogoUrl = (data['SELLER_APP_LOGO_URL'] as String? ?? '').trim();
         _sellerTagline = (data['SELLER_APP_TAGLINE'] as String? ?? _sellerTagline).trim();
         if (_sellerTagline.isEmpty) _sellerTagline = 'Seller Dashboard';
@@ -29,8 +32,5 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  String formatPrice(dynamic amount) {
-    final value = double.tryParse(amount?.toString() ?? '0') ?? 0;
-    return '$_currency ${value.toStringAsFixed(0)}';
-  }
+  String formatPrice(dynamic amount) => Money.fmt(amount);
 }

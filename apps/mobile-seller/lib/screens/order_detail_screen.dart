@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/orders_provider.dart';
+import '../core/money.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
@@ -229,7 +230,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             style: const TextStyle(
                                 color: AppTheme.textSecondary, fontSize: 13)),
                         const SizedBox(width: 12),
-                        Text('KES $price',
+                        Text(Money.fmt(price),
                             style: const TextStyle(
                                 fontWeight: FontWeight.w600, fontSize: 14)),
                       ],
@@ -243,7 +244,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     const Text('Total',
                         style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 16)),
-                    Text('KES $total',
+                    Text(Money.fmt(total),
                         style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

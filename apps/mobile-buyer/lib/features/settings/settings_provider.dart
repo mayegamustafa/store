@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/api_service.dart';
 import '../../core/models/models.dart';
 import '../../core/theme.dart';
+import '../../core/utils/helpers.dart';
 
 class SettingsProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -27,6 +28,7 @@ class SettingsProvider extends ChangeNotifier {
 
   void setCurrency(String currency) {
     _overrideCurrency = currency;
+    defaultCurrencyCode = currency;
     notifyListeners();
   }
 
@@ -43,6 +45,8 @@ class SettingsProvider extends ChangeNotifier {
           }
         }
       }
+      // Keep the global money formatter in sync with the platform currency
+      defaultCurrencyCode = currency;
 
       // Apply theme colors from settings
       final primaryColor = _settings['PRIMARY_COLOR'] ?? _settings['THEME_PRIMARY_COLOR'];

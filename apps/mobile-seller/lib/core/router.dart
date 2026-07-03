@@ -15,6 +15,7 @@ import '../screens/profile_screen.dart';
 import '../screens/subscription_screen.dart';
 import '../screens/subscription_renew_prompt.dart';
 import 'api_service.dart';
+import '../core/money.dart';
 
 class AppRouter {
   static final _shellKey = GlobalKey<NavigatorState>();
@@ -113,7 +114,7 @@ class _ShellState extends State<_Shell> {
       await SubscriptionRenewPrompt.show(
         context,
         planName: plan['name']?.toString() ?? 'Plan',
-        currency: plan['currency']?.toString() ?? 'UGX',
+        currency: plan['currency']?.toString() ?? Money.code,
         amount: num.tryParse(plan['price']?.toString() ?? '0') ?? 0,
         billingCycle: plan['billingCycle']?.toString() ?? 'MONTHLY',
         inGrace: inGrace,

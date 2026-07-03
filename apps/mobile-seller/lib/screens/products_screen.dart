@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/theme.dart';
 import '../providers/products_provider.dart';
+import '../core/money.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -194,7 +195,7 @@ class _ProductGridCard extends StatelessWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 13)),
                     const Spacer(),
-                    Text('KES $price',
+                    Text(Money.fmt(price),
                         style: const TextStyle(
                             color: AppTheme.primary,
                             fontWeight: FontWeight.bold,
@@ -248,7 +249,7 @@ class _ProductListTile extends StatelessWidget {
         ),
         title:
             Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text('KES $price · Stock: $stock',
+        subtitle: Text('${Money.fmt(price)} · Stock: $stock',
             style:
                 const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
         trailing:

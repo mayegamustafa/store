@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api/api_service.dart';
+import '../core/money.dart';
 import '../services/biometric_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/notification_service.dart';
@@ -21,6 +22,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> init() async {
     if (_initialized) return;  // guard against double-call
+    _loadPlatformCurrency(); // fire-and-forget
     try {
       final token = await _storage.read(key: 'riderAccessToken')
           .timeout(const Duration(seconds: 4));
@@ -182,5 +184,18 @@ class AuthProvider extends ChangeNotifier {
     // Keep tokens and biometric_enabled so biometric re-login works
     _user = null;
     notifyListeners();
+  }
+
+  /// Best-effort: read the admin-configured platform currency so all money
+  /// formatting (Money.fmt) uses it. Falls back to the compiled default.
+  Future<void> _loadPlatformCurrency() async {
+    try {
+      final res = await ApiService().dio.get('/settings/public');
+      final data = res.data is Map && (res.data as Map).containsKey('data')
+          ? res.data['data']
+          : res.data;
+      final code = (data is Map ? data['CURRENCY'] : null)?.toString();
+      if (code != null && code.isNotEmpty) Money.code = code;
+    } catch (_) {}
   }
 }

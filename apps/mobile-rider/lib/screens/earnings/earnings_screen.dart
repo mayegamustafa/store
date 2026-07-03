@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_service.dart';
+import '../../core/money.dart';
 
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
@@ -91,7 +92,7 @@ class _EarningsScreenState extends State<EarningsScreen>
               const SizedBox(height: 24),
               _InputField(
                   controller: amountCtrl,
-                  label: 'Amount (UGX)',
+                  label: 'Amount (${Money.code})',
                   icon: Icons.payments_rounded,
                   keyboardType: TextInputType.number),
               const SizedBox(height: 16),
@@ -496,13 +497,11 @@ class _EarningsScreenState extends State<EarningsScreen>
 
   String _fmt(dynamic val) {
     final n = double.tryParse(val?.toString() ?? '0') ?? 0;
-    return 'UGX ${n.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+    return Money.fmt(n);
   }
 
   String _fmtShort(double n) {
-    if (n >= 1000000) return 'UGX ${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return 'UGX ${(n / 1000).toStringAsFixed(0)}K';
-    return 'UGX ${n.toStringAsFixed(0)}';
+    return Money.compact(n);
   }
 
   String _formatDate(String iso) {

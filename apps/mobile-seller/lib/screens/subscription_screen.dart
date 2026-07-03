@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/api_service.dart';
+import '../core/money.dart';
 
 /// Mobile-seller subscription management.
 ///
@@ -186,7 +187,7 @@ class _CurrentPlanBanner extends StatelessWidget {
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
-            '${plan?['currency'] ?? 'UGX'} ${(plan?['price'] ?? 0).toString()} • ${plan?['billingCycle'] ?? 'MONTHLY'}',
+            '${plan?['currency'] ?? Money.code} ${(plan?['price'] ?? 0).toString()} • ${plan?['billingCycle'] ?? 'MONTHLY'}',
             style: theme.textTheme.bodySmall?.copyWith(color: fg),
           ),
           if (daysLeft != null) ...[
@@ -286,7 +287,7 @@ class _PlanCard extends StatelessWidget {
               text: TextSpan(
                 style: theme.textTheme.headlineSmall?.copyWith(color: Colors.black, fontWeight: FontWeight.w800),
                 children: [
-                  TextSpan(text: '${plan['currency'] ?? 'UGX'} ${price.toStringAsFixed(0)}'),
+                  TextSpan(text: '${plan['currency'] ?? Money.code} ${price.toStringAsFixed(0)}'),
                   TextSpan(
                     text: ' / ${plan['billingCycle']?.toString().toLowerCase() ?? 'month'}',
                     style: theme.textTheme.bodySmall?.copyWith(color: Colors.black54),

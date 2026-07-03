@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../services/update_service.dart';
 import '../../providers/delivery_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/money.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -620,7 +621,7 @@ class _DeliveryCardState extends State<_DeliveryCard>
   }
 
   String _fmt(double n) =>
-      'UGX ${n.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+      Money.fmt(n);
 
   @override
   Widget build(BuildContext context) {
