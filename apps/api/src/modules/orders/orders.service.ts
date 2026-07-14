@@ -560,7 +560,7 @@ export class OrdersService {
       doc.moveDown(2);
       doc.fontSize(8).font('Helvetica').fillColor('#999999');
       doc.text('This is a computer-generated receipt and does not require a signature.', { align: 'center' });
-      doc.text('TotalStore — shop.saktech.org', { align: 'center' });
+      doc.text('TotalStore — totalstoreug.com', { align: 'center' });
 
       doc.end();
     });

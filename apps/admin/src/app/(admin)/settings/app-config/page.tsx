@@ -15,7 +15,7 @@ type FormState = {
 };
 
 const DEFAULTS: FormState = {
-  apiBaseUrl: 'https://shop.saktech.org/api/v1',
+  apiBaseUrl: 'https://totalstoreug.com/api/v1',
   apiBackupUrl: '',
   buyerVersion: '1.0.0',
   sellerVersion: '1.0.0',
@@ -129,7 +129,7 @@ export default function AppConfigSettingsPage() {
         <InputRow
           label="Primary API Base URL"
           keyName="apiBaseUrl"
-          placeholder="https://shop.saktech.org/api/v1"
+          placeholder="https://totalstoreug.com/api/v1"
           type="url"
           help="Used by web and mobile clients as the main backend endpoint."
         />

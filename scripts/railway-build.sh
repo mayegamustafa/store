@@ -7,7 +7,7 @@
 # can't hold two different NEXT_PUBLIC_BASE_PATH values).
 set -euo pipefail
 
-SITE_URL="${NEXT_PUBLIC_SITE_URL:-https://shop.saktech.org}"
+SITE_URL="${NEXT_PUBLIC_SITE_URL:-https://totalstoreug.com}"
 
 echo "==> Building API (NestJS + Prisma)"
 (cd apps/api \

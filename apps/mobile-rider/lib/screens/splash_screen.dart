@@ -8,7 +8,7 @@ import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import 'force_update_screen.dart';
 
-const String _kRiderBaseUrl = 'https://shop.saktech.org/api/v1';
+const String _kRiderBaseUrl = 'https://totalstoreug.com/api/v1';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

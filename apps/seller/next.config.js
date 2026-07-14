@@ -11,7 +11,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
-      { protocol: 'https', hostname: 'shop.saktech.org',     pathname: '/uploads/**' },
+      { protocol: 'https', hostname: 'totalstoreug.com',     pathname: '/uploads/**' },
       { protocol: 'https', hostname: 'images.unsplash.com',  pathname: '/**' },
       { protocol: 'https', hostname: 'placehold.co',         pathname: '/**' },
     ],

@@ -4,7 +4,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'http',  hostname: 'localhost',          port: '3001', pathname: '/uploads/**' },
       { protocol: 'http',  hostname: '127.0.0.1',          port: '3001', pathname: '/uploads/**' },
-      { protocol: 'https', hostname: 'shop.saktech.org',                   pathname: '/uploads/**' },
+      { protocol: 'https', hostname: 'totalstoreug.com',                   pathname: '/uploads/**' },
       { protocol: 'https', hostname: 'res.cloudinary.com',               pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com',              pathname: '/**' },
       { protocol: 'https', hostname: 'via.placeholder.com',              pathname: '/**' },

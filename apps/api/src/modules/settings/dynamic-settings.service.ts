@@ -105,9 +105,9 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'GOOGLE_CLIENT_ID', group: 'integrations', label: 'Google OAuth Client ID (web)', type: 'text', defaultValue: '' },
 
   // Dynamic API Configuration
-  { key: 'API_BASE_URL', group: 'api_config', label: 'Primary API Base URL', type: 'url', defaultValue: 'https://shop.saktech.org/api/v1' },
+  { key: 'API_BASE_URL', group: 'api_config', label: 'Primary API Base URL', type: 'url', defaultValue: 'https://totalstoreug.com/api/v1' },
   { key: 'API_BACKUP_URL', group: 'api_config', label: 'Backup API Base URL', type: 'url', defaultValue: '' },
-  { key: 'UPLOAD_BASE_URL', group: 'api_config', label: 'Upload / CDN Base URL', type: 'url', defaultValue: 'https://shop.saktech.org' },
+  { key: 'UPLOAD_BASE_URL', group: 'api_config', label: 'Upload / CDN Base URL', type: 'url', defaultValue: 'https://totalstoreug.com' },
   { key: 'APP_VERSION_BUYER', group: 'api_config', label: 'Buyer App Latest Version', type: 'text', defaultValue: '1.0.0' },
   { key: 'APP_VERSION_SELLER', group: 'api_config', label: 'Seller App Latest Version', type: 'text', defaultValue: '1.0.0' },
   { key: 'APP_VERSION_RIDER', group: 'api_config', label: 'Rider App Latest Version', type: 'text', defaultValue: '1.0.0' },

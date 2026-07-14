@@ -3,11 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 String get _resolvedBaseUrl {
-  return 'https://shop.saktech.org/api/v1';
+  return 'https://totalstoreug.com/api/v1';
 }
 
 class ApiService {
-  static const _baseUrl = 'https://shop.saktech.org/api/v1'; // fallback
+  static const _baseUrl = 'https://totalstoreug.com/api/v1'; // fallback
   late final Dio _dio;
   final _storage = const FlutterSecureStorage();
 

@@ -9,7 +9,7 @@ class AppConfig {
   static final AppConfig instance = AppConfig._();
   AppConfig._();
 
-  static const _defaultApiUrl = 'https://shop.saktech.org/api/v1';
+  static const _defaultApiUrl = 'https://totalstoreug.com/api/v1';
   static const _cacheKey = 'rider_app_config_cache';
 
   String _apiBaseUrl = _defaultApiUrl;
