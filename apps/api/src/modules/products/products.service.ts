@@ -180,6 +180,44 @@ export class ProductsService {
   // ── Create Product (Seller) ───────────────────────────────────────────────────
   // Note: `userId` is the seller's User.id (from JWT). We resolve to SellerProfile.id
   // before insertion — Product.sellerId is FK to SellerProfile, not User.
+
+  /**
+   * Whitelist + normalize incoming product fields. Clients have sent stray
+   * keys (`price`, `category` as free text) that crashed Prisma's create with
+   * unknown-argument errors; accept known fields only and map legacy aliases.
+   */
+  private sanitizeProductDto(dto: any): Record<string, any> {
+    const out: Record<string, any> = {};
+    const num = (v: any) => (v === '' || v == null ? undefined : Number(v));
+    if (dto.name != null) out.name = String(dto.name);
+    if (dto.description != null) out.description = String(dto.description);
+    const basePrice = num(dto.basePrice ?? dto.price);
+    if (basePrice != null && !Number.isNaN(basePrice)) out.basePrice = basePrice;
+    const comparePrice = num(dto.comparePrice);
+    if (comparePrice != null && !Number.isNaN(comparePrice)) out.comparePrice = comparePrice;
+    const cost = num(dto.cost);
+    if (cost != null && !Number.isNaN(cost)) out.cost = cost;
+    const stock = num(dto.stock);
+    if (stock != null && !Number.isNaN(stock)) out.stock = Math.max(0, Math.trunc(stock));
+    if (dto.categoryId != null && dto.categoryId !== '') out.categoryId = String(dto.categoryId);
+    if (Array.isArray(dto.images)) out.images = dto.images.map(String);
+    if (dto.thumbnailUrl != null) out.thumbnailUrl = dto.thumbnailUrl || null;
+    if (dto.videoUrl !== undefined) out.videoUrl = dto.videoUrl || null;
+    if (dto.adVideoUrl !== undefined) out.adVideoUrl = dto.adVideoUrl || null;
+    if (Array.isArray(dto.tags)) out.tags = dto.tags.map(String);
+    if (dto.sku !== undefined) out.sku = dto.sku || null;
+    if (dto.barcode !== undefined) out.barcode = dto.barcode || null;
+    if (dto.weight !== undefined) out.weight = num(dto.weight) ?? null;
+    if (dto.dimensions !== undefined) out.dimensions = dto.dimensions || null;
+    if (dto.discountType !== undefined) out.discountType = dto.discountType || null;
+    if (dto.discountValue !== undefined) out.discountValue = num(dto.discountValue) ?? null;
+    if (dto.deliveryFee !== undefined) out.deliveryFee = num(dto.deliveryFee) ?? null;
+    if (dto.lowStockAlert !== undefined) out.lowStockAlert = num(dto.lowStockAlert) ?? undefined;
+    if (dto.metaTitle !== undefined) out.metaTitle = dto.metaTitle || null;
+    if (dto.metaDesc !== undefined) out.metaDesc = dto.metaDesc || null;
+    return out;
+  }
+
   async create(userId: string, dto: any) {
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { userId },
@@ -206,15 +244,20 @@ export class ProductsService {
       );
     }
 
+    const clean = this.sanitizeProductDto(dto);
+    if (!clean.name) throw new BadRequestException('Product name is required');
+    if (clean.basePrice == null) throw new BadRequestException('Product price is required');
+    if (!clean.categoryId) throw new BadRequestException('Please choose a category');
+
     const slug = this.slugify(dto.name);
     return this.prisma.product.create({
       data: {
-        ...dto,
+        ...clean,
         sellerId: seller.id,
         slug,
         status: ProductStatus.PENDING_REVIEW,
         variants: dto.variants ? { create: dto.variants } : undefined,
-      },
+      } as any,
       include: { variants: true },
     });
   }
@@ -228,7 +271,7 @@ export class ProductsService {
 
     return this.prisma.product.update({
       where: { id: productId },
-      data: { ...dto, status: ProductStatus.PENDING_REVIEW },
+      data: { ...this.sanitizeProductDto(dto), status: ProductStatus.PENDING_REVIEW } as any,
     });
   }
 

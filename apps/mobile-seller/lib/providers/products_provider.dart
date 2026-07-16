@@ -41,23 +41,27 @@ class ProductsProvider extends ChangeNotifier {
     await load();
   }
 
-  Future<bool> createProduct(Map<String, dynamic> data) async {
+  /// Returns null on success, or a human-readable error message (e.g. the
+  /// plan-limit upgrade prompt) so the form can show WHY it failed.
+  Future<String?> createProduct(Map<String, dynamic> data) async {
     try {
       await _api.dio.post('/products', data: data);
       await load(refresh: true);
-      return true;
-    } catch (_) {
-      return false;
+      return null;
+    } catch (e) {
+      final msg = _api.errorMessage(e);
+      return msg.isNotEmpty ? msg : 'Failed to create product';
     }
   }
 
-  Future<bool> updateProduct(String id, Map<String, dynamic> data) async {
+  Future<String?> updateProduct(String id, Map<String, dynamic> data) async {
     try {
       await _api.dio.patch('/products/$id', data: data);
       await load(refresh: true);
-      return true;
-    } catch (_) {
-      return false;
+      return null;
+    } catch (e) {
+      final msg = _api.errorMessage(e);
+      return msg.isNotEmpty ? msg : 'Failed to update product';
     }
   }
 }

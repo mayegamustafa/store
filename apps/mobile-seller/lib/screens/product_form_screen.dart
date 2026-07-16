@@ -22,7 +22,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _descCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _stockCtrl = TextEditingController();
-  final _categoryCtrl = TextEditingController();
+  String? _categoryId;
+  List<Map<String, dynamic>> _categories = [];
   List<String> _imageUrls = [];
   bool _loading = false;
   bool _fetching = false;
@@ -32,7 +33,19 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     if (isEdit) _fetchProduct();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final res = await ApiService().dio.get('/categories');
+      final data = ApiService().extractData(res);
+      if (data is List && mounted) {
+        setState(() => _categories =
+            data.map((c) => Map<String, dynamic>.from(c as Map)).toList());
+      }
+    } catch (_) {}
   }
 
   Future<void> _fetchProduct() async {
@@ -60,7 +73,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         _descCtrl.text = data['description'] ?? '';
         _priceCtrl.text = (data['basePrice'] ?? data['price'] ?? '').toString();
         _stockCtrl.text = (data['stock'] ?? '').toString();
-        _categoryCtrl.text = data['category']?['name'] ?? data['category'] ?? '';
+        _categoryId = data['categoryId'] ?? data['category']?['id'];
         _imageUrls = List<String>.from(data['images'] ?? []);
       }
     } catch (_) {}
@@ -94,25 +107,33 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
+    if (_categoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please choose a category')));
+      setState(() => _loading = false);
+      return;
+    }
+    // Server contract: basePrice (number) + categoryId (uuid) — the old
+    // 'price'/'category' keys made every create fail.
     final data = {
       'name': _nameCtrl.text.trim(),
       'description': _descCtrl.text.trim(),
-      'price': double.tryParse(_priceCtrl.text) ?? 0,
+      'basePrice': double.tryParse(_priceCtrl.text) ?? 0,
       'stock': int.tryParse(_stockCtrl.text) ?? 0,
-      'category': _categoryCtrl.text.trim(),
+      'categoryId': _categoryId,
       'images': _imageUrls,
     };
     final provider = context.read<ProductsProvider>();
-    final ok = isEdit
+    final err = isEdit
         ? await provider.updateProduct(widget.productId!, data)
         : await provider.createProduct(data);
     if (!mounted) return;
     setState(() => _loading = false);
-    if (ok) {
+    if (err == null) {
       context.pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save product')));
+          SnackBar(content: Text(err), duration: const Duration(seconds: 5)));
     }
   }
 
@@ -122,7 +143,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _descCtrl.dispose();
     _priceCtrl.dispose();
     _stockCtrl.dispose();
-    _categoryCtrl.dispose();
     super.dispose();
   }
 
@@ -236,10 +256,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _categoryCtrl,
+                  DropdownButtonFormField<String>(
+                    value: _categories.any((c) => c['id'] == _categoryId)
+                        ? _categoryId
+                        : null,
                     decoration:
                         const InputDecoration(labelText: 'Category'),
+                    items: _categories
+                        .map((c) => DropdownMenuItem<String>(
+                              value: c['id'] as String,
+                              child: Text(c['name']?.toString() ?? ''),
+                            ))
+                        .toList(),
+                    onChanged: (v) => setState(() => _categoryId = v),
+                    validator: (v) => v == null ? 'Choose a category' : null,
                   ),
                   const SizedBox(height: 32),
                   SizedBox(
