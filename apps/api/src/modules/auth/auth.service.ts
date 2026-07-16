@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -175,8 +176,17 @@ export class AuthService {
   private async generateTokens(userId: string, role: string) {
     const payload = { sub: userId, role };
 
+    const secret = this.config.get<string>('JWT_SECRET');
+    if (!secret) {
+      // Without this guard a missing env var surfaces as an opaque 500 on
+      // every successful credential check ("login is broken for everyone").
+      throw new ServiceUnavailableException(
+        'Server auth misconfigured: JWT_SECRET is not set',
+      );
+    }
+
     const accessToken = this.jwt.sign(payload, {
-      secret: this.config.get('JWT_SECRET'),
+      secret,
       expiresIn: this.config.get('JWT_EXPIRES_IN', '15m'),
     });
 
