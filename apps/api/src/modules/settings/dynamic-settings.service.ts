@@ -103,6 +103,8 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'SENTRY_DSN', group: 'integrations', label: 'Sentry DSN', type: 'secret', defaultValue: '', isSecret: true },
   // OAuth client IDs are public by design — they ship inside every frontend
   { key: 'GOOGLE_CLIENT_ID', group: 'integrations', label: 'Google OAuth Client ID (web)', type: 'text', defaultValue: '' },
+  { key: 'IMPROVMX_API_KEY', group: 'integrations', label: 'ImprovMX API Key', type: 'secret', defaultValue: '', isSecret: true },
+  { key: 'IMPROVMX_DOMAIN', group: 'integrations', label: 'ImprovMX Email Domain', type: 'text', defaultValue: 'totalstoreug.com' },
 
   // Dynamic API Configuration
   { key: 'API_BASE_URL', group: 'api_config', label: 'Primary API Base URL', type: 'url', defaultValue: 'https://totalstoreug.com/api/v1' },

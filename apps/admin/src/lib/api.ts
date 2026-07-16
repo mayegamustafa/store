@@ -252,6 +252,15 @@ export const adminApi = {
   getPendingDeliveries: () => api.get('/delivery/pending'),
   getOrderTracking: (orderId: string) => api.get(`/delivery/orders/${orderId}/tracking`),
 
+  // ── Email management (ImprovMX aliases + logs) ─────────────────────────────
+  getEmailStatus: () => api.get('/email/status'),
+  checkEmailDns: () => api.get('/email/dns'),
+  getEmailAliases: () => api.get('/email/aliases'),
+  createEmailAlias: (alias: string, forward: string) => api.post('/email/aliases', { alias, forward }),
+  updateEmailAlias: (alias: string, forward: string) => api.put(`/email/aliases/${encodeURIComponent(alias)}`, { forward }),
+  deleteEmailAlias: (alias: string) => api.delete(`/email/aliases/${encodeURIComponent(alias)}`),
+  getEmailLogs: () => api.get('/email/logs'),
+
   // ── Payout queue (withdrawals to mobile money / bank) ─────────────────────
   getPayouts: (status?: string, page = 1) => api.get('/wallet/admin/payouts', { params: { status, page } }),
   approvePayout: (id: string, reference?: string) => api.post(`/wallet/admin/payouts/${id}/approve`, { reference }),

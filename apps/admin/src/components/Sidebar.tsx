@@ -121,6 +121,7 @@ const NAV: NavEntry[] = [
   { type: 'link', href: '/payouts',           label: 'Payouts',          icon: ArrowUpFromLine },
   { type: 'link', href: '/payment-gateways', label: 'Payment Gateways', icon: CreditCard },
   { type: 'link', href: '/notifications',    label: 'Notifications',    icon: Bell },
+  { type: 'link', href: '/emails',           label: 'Emails',           icon: Mail },
   { type: 'link', href: '/support',       label: 'Support Inbox',    icon: Inbox },
   { type: 'link', href: '/messages',      label: 'Messages',         icon: MessageCircle },
   { type: 'link', href: '/blog',          label: 'Blog',             icon: Newspaper },

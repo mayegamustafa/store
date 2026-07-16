@@ -22,6 +22,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { FlashSalesModule } from './modules/flash-sales/flash-sales.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { EmailModule } from './modules/email/email.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -105,6 +106,7 @@ import { HealthController } from './health/health.controller';
     CouponsModule,
     FlashSalesModule,
     UploadModule,
+    EmailModule,
     StaffModule,
     SettingsModule,
     ReelsModule,
