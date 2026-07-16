@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -12,10 +13,23 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
     context.read<WalletProvider>().load();
+    // Balance / withdrawal statuses refresh while the screen is open, so an
+    // admin approval shows up within seconds without pull-to-refresh.
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (mounted) context.read<WalletProvider>().load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   void _showWithdrawSheet() {

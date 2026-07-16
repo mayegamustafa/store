@@ -8,6 +8,7 @@ import '../products/categories_tab.dart';
 import '../cart/cart_screen.dart';
 import '../orders/orders_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../core/widgets/offline_banner.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -40,9 +41,11 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
+      body: OfflineBanner(
+        child: IndexedStack(
         index: _currentIndex,
         children: _tabs,
+      )
       ),
       bottomNavigationBar: Consumer<CartProvider>(
         builder: (context, cartProvider, child) {

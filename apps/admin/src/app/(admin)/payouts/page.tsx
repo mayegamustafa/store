@@ -42,6 +42,7 @@ export default function PayoutsPage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-payouts', status, page],
     queryFn: () => adminApi.getPayouts(status || undefined, page) as Promise<any>,
+    refetchInterval: 15_000, // live queue — new withdrawal requests appear on their own
   });
 
   const { data: revenue } = useQuery({

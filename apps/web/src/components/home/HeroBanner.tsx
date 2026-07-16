@@ -150,9 +150,10 @@ export function HeroBanner() {
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { data: slidesRaw } = useQuery({
+  const { data: slidesRaw, isLoading: slidesLoading } = useQuery({
     queryKey: ['hero-slides'],
     queryFn: () => bannersApi.getHeroSlides().then((r: any) => r.data?.data ?? r.data ?? []),
+    staleTime: 5 * 60_000,
   });
 
   const { data: cats } = useQuery({
@@ -177,6 +178,19 @@ export function HeroBanner() {
     if (timerRef.current) clearInterval(timerRef.current);
     if (total > 1) timerRef.current = setInterval(next, 5000);
   };
+
+  // Never flash the hardcoded fallback while the admin-configured slides are
+  // still loading — show a quiet skeleton instead. Fallbacks appear only when
+  // the fetch resolved and the admin has no hero slides configured.
+  if (slidesLoading) {
+    return (
+      <section className="relative overflow-hidden">
+        <div className="mx-auto max-w-[1500px]">
+          <div className="h-[340px] md:h-[420px] bg-zinc-200 animate-pulse" />
+        </div>
+      </section>
+    );
+  }
 
   const slide = slides[current];
   const bg = slide.bgColor ?? 'bg-zinc-900';

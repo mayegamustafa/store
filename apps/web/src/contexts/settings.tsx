@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useCurrencyStore } from '@/stores/currency.store';
+import { loadLiveRates } from '@/stores/currency.store';
 
 interface SiteSettings {
   SITE_NAME: string;
@@ -99,6 +100,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULTS);
 
   useEffect(() => {
+    loadLiveRates(); // refresh currency conversion rates (12h server cache)
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
     fetch(`${apiUrl}/settings/public`)
       .then((r) => r.json())

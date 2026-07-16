@@ -37,6 +37,26 @@ interface CurrencyState {
   getCurrency: () => Currency;
 }
 
+/** Overwrite the hardcoded fallback rates with live ones (base UGX). */
+export async function loadLiveRates() {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+    const res = await fetch(`${apiUrl}/config/fx`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const rates: Record<string, number> = data?.rates ?? {};
+    if (!Object.keys(rates).length) return;
+    for (const c of SUPPORTED_CURRENCIES) {
+      // API base is the platform currency (normally UGX); rates map 1 base → X target
+      if (typeof rates[c.code] === 'number' && rates[c.code] > 0) {
+        c.rateFromUGX = rates[c.code];
+      }
+    }
+  } catch {
+    // keep compiled fallbacks
+  }
+}
+
 export const useCurrencyStore = create<CurrencyState>()(
   persist(
     (set, get) => ({

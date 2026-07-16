@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api/api_service.dart';
+import '../core/offline_cache.dart';
 
 class DeliveryProvider extends ChangeNotifier {
   final _api = ApiService();
@@ -51,11 +52,16 @@ class DeliveryProvider extends ChangeNotifier {
     // API returns the array directly (not wrapped in {data:[...]})
     if (res is List) {
       _deliveries = List<dynamic>.from(res as Iterable);
+      OfflineCache.saveList('deliveries', _deliveries);
     } else if (res is Map) {
       final m = res as Map<String, dynamic>;
       _deliveries = List<dynamic>.from((m['data'] as List?) ?? (m['deliveries'] as List?) ?? []);
+      OfflineCache.saveList('deliveries', _deliveries);
     } else {
-      _deliveries = [];
+      // Network failed (getAssignedDeliveries returns null on error) —
+      // keep working from the last saved list so the rider still sees jobs
+      final cached = await OfflineCache.readList('deliveries');
+      _deliveries = cached ?? [];
     }
     if (_activeDeliveryId != null && !_deliveries.any((d) => d['id'] == _activeDeliveryId)) {
       _activeDeliveryId = null;

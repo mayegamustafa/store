@@ -2,8 +2,11 @@ import 'package:flutter/material.dart' hide Banner;
 import '../../core/api/api_service.dart';
 import '../../core/models/models.dart';
 import '../../core/constants.dart';
+import '../../core/services/offline_cache.dart';
 
 class ProductsProvider extends ChangeNotifier {
+  // Offline: every fetcher saves its last good payload and falls back to it
+  // when the network is unavailable (see OfflineCache).
   final ApiService _api = ApiService();
 
   List<Product> _products = [];
@@ -50,7 +53,13 @@ class ProductsProvider extends ChangeNotifier {
       final data = _api.extractData(response);
       final list = data is List ? data : (data['data'] ?? data);
       _categories = (list as List).map((c) => Category.fromJson(c)).toList();
-    } catch (_) {}
+      OfflineCache.saveList('home_categories', list);
+    } catch (_) {
+      final cached = await OfflineCache.readList('home_categories');
+      if (cached != null) {
+        _categories = cached.map((x) => Category.fromJson(x)).toList();
+      }
+    }
   }
 
   Future<void> _fetchFeatured() async {
@@ -59,7 +68,13 @@ class ProductsProvider extends ChangeNotifier {
       final data = _api.extractData(response);
       final list = data is List ? data : (data['data'] ?? data);
       _featured = (list as List).map((p) => Product.fromJson(p)).toList();
-    } catch (_) {}
+      OfflineCache.saveList('home_featured', list);
+    } catch (_) {
+      final cached = await OfflineCache.readList('home_featured');
+      if (cached != null) {
+        _featured = cached.map((x) => Product.fromJson(x)).toList();
+      }
+    }
   }
 
   Future<void> _fetchFlashSales() async {
@@ -68,7 +83,13 @@ class ProductsProvider extends ChangeNotifier {
       final data = _api.extractData(response);
       final list = data is List ? data : (data['data'] ?? data);
       _flashSales = (list as List).map((f) => FlashSale.fromJson(f)).toList();
-    } catch (_) {}
+      OfflineCache.saveList('home_flash', list);
+    } catch (_) {
+      final cached = await OfflineCache.readList('home_flash');
+      if (cached != null) {
+        _flashSales = cached.map((x) => FlashSale.fromJson(x)).toList();
+      }
+    }
   }
 
   Future<void> _fetchBanners() async {
@@ -77,7 +98,13 @@ class ProductsProvider extends ChangeNotifier {
       final data = _api.extractData(response);
       final list = data is List ? data : (data['data'] ?? data);
       _banners = (list as List).map((b) => Banner.fromJson(b)).toList();
-    } catch (_) {}
+      OfflineCache.saveList('home_banners', list);
+    } catch (_) {
+      final cached = await OfflineCache.readList('home_banners');
+      if (cached != null) {
+        _banners = cached.map((x) => Banner.fromJson(x)).toList();
+      }
+    }
   }
 
   Future<void> fetchProducts({
@@ -125,13 +152,24 @@ class ProductsProvider extends ChangeNotifier {
 
       if (refresh) {
         _products = newProducts;
+        // Only the default first page is worth keeping for offline browsing
+        if ((_currentSearch ?? '').isEmpty && _currentCategoryId == null) {
+          OfflineCache.saveList('products_page1', rawList);
+        }
       } else {
         _products.addAll(newProducts);
       }
 
       _hasMore = newProducts.length >= AppConstants.productsPerPage;
       if (_hasMore) _page++;
-    } catch (_) {}
+    } catch (_) {
+      if (refresh && _products.isEmpty) {
+        final cached = await OfflineCache.readList('products_page1');
+        if (cached != null) {
+          _products = cached.map((x) => Product.fromJson(x)).toList();
+          _hasMore = false;
+        }
+      }}
 
     _isLoading = false;
     _isLoadingMore = false;

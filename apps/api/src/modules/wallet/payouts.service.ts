@@ -1,6 +1,8 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, Optional } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
+import { NotificationChannel, NotificationEventType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from './wallet.service';
 import { WalletOwnerType } from './dto/wallet.dto';
 
@@ -31,7 +33,49 @@ export class PayoutsService {
   constructor(
     private prisma: PrismaService,
     private walletService: WalletService,
+    @Optional() private notifications?: NotificationsService,
   ) {}
+
+  /** User.id behind a payout owner (profiles → their user). */
+  private async ownerUserId(ownerType: string, ownerId: string | null): Promise<string | null> {
+    if (!ownerId) return null;
+    if (ownerType === 'SELLER') {
+      const sp = await this.prisma.sellerProfile.findUnique({ where: { id: ownerId }, select: { userId: true } });
+      return sp?.userId ?? null;
+    }
+    if (ownerType === 'RIDER') {
+      const rp = await this.prisma.riderProfile.findUnique({ where: { id: ownerId }, select: { userId: true } });
+      return rp?.userId ?? null;
+    }
+    return ownerId; // BUYER — already a User.id
+  }
+
+  /** Realtime feel: push + in-app notify the requester about payout status. */
+  private notifyPayout(payout: any, approved: boolean, reason?: string) {
+    void (async () => {
+      try {
+        const userId = await this.ownerUserId(payout.ownerType, payout.ownerId ?? payout.sellerId);
+        if (!userId || !this.notifications) return;
+        const amount = `${payout.currency} ${Number(payout.amount).toLocaleString()}`;
+        const title = approved ? 'Withdrawal paid' : 'Withdrawal rejected';
+        const body = approved
+          ? `${amount} was sent to ${payout.destination}${payout.reference ? ` (Ref: ${payout.reference})` : ''}.`
+          : `${amount} to ${payout.destination} was declined${reason ? `: ${reason}` : ''}. Your wallet has been refunded.`;
+        await this.notifications.sendToUser(
+          userId,
+          approved ? NotificationEventType.SELLER_PAYOUT_SENT : NotificationEventType.CUSTOM,
+          { amount, destination: payout.destination, title, body },
+          {
+            channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP] as any,
+            fallbackSms: body,
+            route: '/wallet',
+          },
+        );
+      } catch (e: any) {
+        this.logger.warn(`Payout notification failed: ${e?.message || e}`);
+      }
+    })();
+  }
 
   async request(input: PayoutRequestInput) {
     const { ownerType, ownerId, amount, method, destination, destinationName, bankName } = input;
@@ -104,7 +148,9 @@ export class PayoutsService {
       throw new BadRequestException(`Payout is already ${payout.status}`);
     }
     this.logger.log(`Payout ${payoutId} approved (ref: ${reference || 'n/a'})`);
-    return this.prisma.payout.findUnique({ where: { id: payoutId } }).then((p) => this.format(p!));
+    const approved = await this.prisma.payout.findUniqueOrThrow({ where: { id: payoutId } });
+    this.notifyPayout(approved, true);
+    return this.format(approved);
   }
 
   async reject(payoutId: string, reason: string) {
@@ -136,6 +182,7 @@ export class PayoutsService {
         break;
     }
     this.logger.log(`Payout ${payoutId} rejected and refunded: ${reason}`);
+    this.notifyPayout(payout, false, reason.trim());
     return this.format(payout);
   }
 

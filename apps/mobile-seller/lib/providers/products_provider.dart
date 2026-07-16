@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api_service.dart';
+import '../core/offline_cache.dart';
 
 class ProductsProvider extends ChangeNotifier {
   final _api = ApiService();
@@ -24,13 +25,19 @@ class ProductsProvider extends ChangeNotifier {
       final list = data is List ? data : (data['data'] as List?) ?? [];
       if (refresh || _page == 1) {
         _products = list;
+        OfflineCache.saveList('my_products', list);
       } else {
         _products = [..._products, ...list];
       }
       if (data is Map) {
         _totalPages = (data['pages'] as int?) ?? 1;
       }
-    } catch (_) {}
+    } catch (_) {
+      if (_products.isEmpty) {
+        final cached = await OfflineCache.readList('my_products');
+        if (cached != null) _products = cached;
+      }
+    }
     _loading = false;
     notifyListeners();
   }
