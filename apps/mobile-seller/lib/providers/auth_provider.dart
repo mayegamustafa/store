@@ -118,6 +118,31 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Google sign-in: exchange the Google ID token at the backend, then gate
+  /// on seller/admin role (buyers must register a store first).
+  Future<String?> googleLogin(String idToken) async {
+    try {
+      final res = await _api.dio.post('/auth/google-signin', data: {
+        'credential': idToken,
+        'role': 'SELLER',
+      });
+      final data = _api.extractData(res);
+      final role = data['user']?['role'];
+      if (role != 'SELLER' && role != 'ADMIN') {
+        return 'This Google account has no seller store yet — use Register to create one';
+      }
+      await _api.setTokens(
+          data['accessToken'] as String, data['refreshToken'] as String);
+      _user = data['user'] as Map<String, dynamic>;
+      NotificationService().registerTokenAfterLogin();
+      notifyListeners();
+      return null;
+    } catch (e) {
+      final msg = _api.errorMessage(e);
+      return msg.isNotEmpty ? msg : 'Google sign-in failed';
+    }
+  }
+
   /// Re-fetch the current user (after profile edits).
   Future<void> refreshProfile() async {
     try {
