@@ -72,6 +72,13 @@ export default function NotificationsPage() {
   });
   const logs = logsData?.logs ?? [];
 
+  // Load a past notification back into the composer and jump to Send.
+  function reuseLog(l: any) {
+    setSendTitle(l.subject || 'TotalStore');
+    setSendBody(l.body || '');
+    setTab('send');
+  }
+
   // --- Test Panel ---
   const [testPhone, setTestPhone] = useState('');
   const [testEmail, setTestEmail] = useState('');
@@ -270,13 +277,14 @@ export default function NotificationsPage() {
                 <th className="px-4 py-3 text-left">Event</th>
                 <th className="px-4 py-3 text-left">Recipient</th>
                 <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Error</th>
+                <th className="px-4 py-3 text-left">Message</th>
                 <th className="px-4 py-3 text-left">Sent At</th>
+                <th className="px-4 py-3 text-left">Reuse</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {logs.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No logs yet.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No logs yet.</td></tr>
               ) : logs.map((l: any) => (
                 <tr key={l.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
@@ -287,8 +295,19 @@ export default function NotificationsPage() {
                   <td className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[l.status] ?? 'bg-slate-100'}`}>{l.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-red-500 text-xs max-w-[200px] truncate">{l.error || '—'}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{new Date(l.sentAt ?? l.createdAt).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-slate-600 text-xs max-w-[220px]">
+                    {l.subject && <p className="font-medium truncate">{l.subject}</p>}
+                    <p className="truncate">{l.body || l.error || '—'}</p>
+                  </td>
+                  <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(l.sentAt ?? l.createdAt).toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => reuseLog(l)}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 whitespace-nowrap"
+                    >
+                      Reuse →
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
