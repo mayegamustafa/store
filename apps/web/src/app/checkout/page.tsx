@@ -11,6 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { PaymentLogosRow } from '@/components/PaymentLogos';
+import { useCurrencyStore } from '@/stores/currency.store';
 
 const PAYMENT_METHODS = [
   {
@@ -51,6 +52,12 @@ function CheckoutContent() {
   const [step, setStep] = useState<'address' | 'payment'>('address');
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('PESAPAL_MOBILE');
+  // Orders are always charged in UGX (the platform's settlement currency);
+  // a buyer browsing in another currency sees the equivalent here so the
+  // amount on the payment page is never a surprise.
+  const displayCurrency = useCurrencyStore((s) => s.currencyCode);
+  const convert = useCurrencyStore((s) => s.convert);
+  const getCurrency = useCurrencyStore((s) => s.getCurrency);
   const [addingAddress, setAddingAddress] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
   const [detectingGps, setDetectingGps] = useState(false);
@@ -118,9 +125,18 @@ function CheckoutContent() {
       const result = payRes?.data ?? payRes;
       if (result.redirectUrl) {
         window.location.href = result.redirectUrl;
-      } else {
-        router.push(`/orders/${order.id}?payment=pending`);
+        return;
       }
+      // No redirect URL means the provider refused (bad keys, unsupported
+      // method, provider down). Previously this silently dropped the buyer on
+      // an unpaid "pending" order with no explanation — say what happened and
+      // let them retry payment from the order page.
+      toast.error(
+        result.message ||
+          "We couldn't start the payment. Your order is saved — open it to try paying again.",
+        { duration: 6000 },
+      );
+      router.push(`/orders/${order.id}?payment=failed`);
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Failed to place order');
       setPlacingOrder(false);
@@ -491,6 +507,13 @@ function CheckoutContent() {
                 <span>Total</span>
                 <span className="text-sky-600">UGX {total.toLocaleString()}</span>
               </div>
+              {displayCurrency !== 'UGX' && (
+                <p className="text-xs text-slate-400 mt-1 text-right">
+                  ≈ {getCurrency().symbol}
+                  {convert(total).toLocaleString(undefined, { maximumFractionDigits: 2 })} {displayCurrency}
+                  {' '}· charged in UGX
+                </p>
+              )}
             </div>
           </div>
         </div>
