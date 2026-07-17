@@ -96,6 +96,12 @@ class NotificationService {
   /// Call this after a successful login so the token is sent with a valid JWT.
   Future<void> registerTokenAfterLogin() async {
     await _registerToken();
+    // Subscribe to broadcast topics so admin "send to all/buyers" reaches
+    // this device (server broadcasts via FCM topics, not per-token).
+    try {
+      await _fcm.subscribeToTopic('all_users');
+      await _fcm.subscribeToTopic('buyers');
+    } catch (_) {}
   }
 
   Future<void> _sendTokenToBackend(String token) async {

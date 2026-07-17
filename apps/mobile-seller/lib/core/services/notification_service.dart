@@ -78,6 +78,9 @@ class NotificationService {
     try {
       final token = await _fcm.getToken();
       if (token != null) await _sendTokenToBackend(token);
+      // Broadcast topics so admin "send to all/sellers" reaches this device.
+      await _fcm.subscribeToTopic('all_users');
+      await _fcm.subscribeToTopic('sellers');
     } catch (_) {}
   }
 

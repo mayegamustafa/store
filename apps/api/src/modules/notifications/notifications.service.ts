@@ -66,9 +66,17 @@ export class NotificationsService implements OnModuleInit {
         this.config.get('FIREBASE_PROJECT_ID');
       if (!projectId) { this.logger.warn('Firebase not configured — push disabled'); return; }
 
-      const privateKey =
-        ((await this.dynamicSettings.get('FIREBASE_PRIVATE_KEY')) ||
-          this.config.get('FIREBASE_PRIVATE_KEY') || '').replace(/\\n/g, '\n');
+      let privateKey =
+        (await this.dynamicSettings.get('FIREBASE_PRIVATE_KEY')) ||
+        this.config.get('FIREBASE_PRIVATE_KEY') || '';
+      // Railway/env gotchas: value sometimes arrives wrapped in quotes and/or
+      // with literal \n instead of real newlines. Normalise both.
+      privateKey = privateKey.trim();
+      if ((privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+          (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+        privateKey = privateKey.slice(1, -1);
+      }
+      privateKey = privateKey.replace(/\\n/g, '\n');
       const clientEmail =
         (await this.dynamicSettings.get('FIREBASE_CLIENT_EMAIL')) ||
         this.config.get('FIREBASE_CLIENT_EMAIL');
@@ -90,6 +98,11 @@ export class NotificationsService implements OnModuleInit {
     } catch (e) {
       this.logger.warn(`Firebase init error — push disabled: ${e.message}`);
     }
+  }
+
+  /** Whether push is actually live (Firebase initialised). */
+  get pushEnabled(): boolean {
+    return this.firebaseApp != null;
   }
 
   // ── Template renderer ─────────────────────────────────────────────────────────
@@ -249,7 +262,16 @@ export class NotificationsService implements OnModuleInit {
         topic,
         notification: { title, body, ...(imageUrl ? { imageUrl } : {}) },
         data: data ?? {},
-        android: { priority: 'high', ...(imageUrl ? { notification: { imageUrl } } : {}) },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'totalstore_high', // heads-up channel the apps register
+            priority: 'high',
+            defaultSound: true,
+            defaultVibrateTimings: true,
+            ...(imageUrl ? { imageUrl } : {}),
+          },
+        },
         apns: { headers: { 'apns-priority': '10' }, payload: { aps: { sound: 'default', 'content-available': 1 } }, ...(imageUrl ? { fcmOptions: { imageUrl } } : {}) },
       });
     } catch (error) {
@@ -498,7 +520,7 @@ export class NotificationsService implements OnModuleInit {
       options.body,
       options.title,
     );
-    return { sent: true, topic };
+    return { sent: this.pushEnabled, topic, pushEnabled: this.pushEnabled };
   }
 
   /**
