@@ -329,6 +329,13 @@ model SellerProfile {
   rejectedAt       DateTime?
   rejectionReason  String?
   isOfficial       Boolean  @default(false)
+  // Trust / verification
+  isVerified       Boolean  @default(false) // gold badge — all checks passed
+  verifiedAt       DateTime?
+  faceVerified     Boolean  @default(false)
+  faceVerifiedAt   DateTime?
+  infoRequested    String?  // admin's note asking for missing details
+  infoRequestedAt  DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -354,9 +361,19 @@ model RiderProfile {
   isOnline      Boolean      @default(false)
   vehicleType   String?      // bicycle / motorcycle / car / van
   vehiclePlate  String?
+  vehicleModel  String?
   licenseNo     String?
   licenseDoc    String?
   idDoc         String?
+  nationalId    String?      // Uganda NIN
+  // Trust / verification (mirrors SellerProfile)
+  kycStatus     KycStatus    @default(NOT_SUBMITTED)
+  isVerified    Boolean      @default(false) // gold badge — all checks passed
+  verifiedAt    DateTime?
+  faceVerified  Boolean      @default(false) // selfie matched to ID photo
+  faceVerifiedAt DateTime?
+  infoRequested String?      // admin's note asking for missing details
+  infoRequestedAt DateTime?
   currentLat    Float?
   currentLng    Float?
   lastLocationAt DateTime?

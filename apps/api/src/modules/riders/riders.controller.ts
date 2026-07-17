@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { RidersService } from './riders.service';
+import { VerificationService } from './verification.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
@@ -11,7 +12,53 @@ import { Role } from '@prisma/client';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class RidersController {
-  constructor(private ridersService: RidersService) {}
+  constructor(
+    private ridersService: RidersService,
+    private verification: VerificationService,
+  ) {}
+
+  // ── Verification / trust ────────────────────────────────────────────────
+  // What a rider still needs for the verified badge (own view).
+  @Get('me/verification')
+  async myVerification(@CurrentUser('id') id: string) {
+    const profile = await this.ridersService.getMyProfile(id);
+    const riderId = (profile as any)?.id ?? (profile as any)?.riderProfile?.id;
+    if (!riderId) return { missing: [], complete: false };
+    const check = await this.verification.riderChecklist(riderId);
+    return {
+      missing: check?.missing ?? [],
+      complete: check?.complete ?? false,
+      isVerified: check?.profile?.isVerified ?? false,
+      infoRequested: check?.profile?.infoRequested ?? null,
+      memberSince: check?.profile?.createdAt ?? null,
+    };
+  }
+
+  // Admin: ask a rider for missing details
+  @Post(':id/request-info')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  requestInfo(@Param('id') id: string, @Body('message') message: string) {
+    if (!message?.trim()) throw new BadRequestException('Tell the rider what is missing');
+    return this.verification.requestInfo('rider', id, message.trim());
+  }
+
+  // Admin: record the face-check result (selfie vs ID); auto-verifies when
+  // it completes the checklist
+  @Post(':id/face-check')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  faceCheck(@Param('id') id: string, @Body('passed') passed: boolean) {
+    return this.verification.setFaceVerified('rider', id, passed !== false);
+  }
+
+  // Admin: re-run the checklist (e.g. after the rider uploads something)
+  @Post(':id/evaluate')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  evaluate(@Param('id') id: string) {
+    return this.verification.evaluateRider(id);
+  }
 
   @Post('register') register(@CurrentUser('id') id: string, @Body() dto: any) { return this.ridersService.register(id, dto); }
   @Get('me') getProfile(@CurrentUser('id') id: string) { return this.ridersService.getMyProfile(id); }

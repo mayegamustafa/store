@@ -39,6 +39,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final rating = double.tryParse(riderProfile['rating']?.toString() ?? '0') ?? 0;
       final totalDeliveries = (riderProfile['totalDeliveries'] as num?)?.toInt() ?? 0;
       final isActive = riderProfile['status'] == 'ACTIVE';
+      // Gold badge = every KYC check passed (auto-granted by the server).
+      final isVerified = riderProfile['isVerified'] == true;
+      final infoRequested = riderProfile['infoRequested'] as String?;
       final vehicleType = riderProfile['vehicleType'] as String?;
       final licensePlate = riderProfile['vehiclePlate'] ?? riderProfile['licensePlate'] ?? '';
       final memberSince = user['createdAt'] != null
@@ -156,15 +159,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.white.withOpacity(0.25)),
                           ),
-                          child: Text(
-                            isActive ? 'Verified Rider' : 'Pending Approval',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isVerified) ...[
+                                const Icon(Icons.verified_rounded,
+                                    size: 13, color: Color(0xFFFFC93C)),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(
+                            isVerified
+                                ? 'Verified & Trusted'
+                                : isActive
+                                    ? 'Approved Rider'
+                                    : 'Pending Approval',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
+                              ),
+                            ],
                           ),
                         ),
+                        // Admin asked for something — show it prominently
+                        if (infoRequested != null && infoRequested.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline_rounded,
+                                    color: Colors.amber, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(infoRequested,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 12)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

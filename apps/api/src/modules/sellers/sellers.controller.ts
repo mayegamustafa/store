@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { SellersService } from './sellers.service';
+import { VerificationService } from '../riders/verification.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
@@ -15,7 +16,52 @@ export class SellersController {
   constructor(
     private sellersService: SellersService,
     private prisma: PrismaService,
+    private verification: VerificationService,
   ) {}
+
+  // ── Verification / trust ────────────────────────────────────────────────
+  // What a seller still needs for the verified badge (own view).
+  @Get('me/verification')
+  async myVerification(@CurrentUser('id') id: string) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { userId: id },
+      select: { id: true },
+    });
+    if (!seller) return { missing: [], complete: false };
+    const check = await this.verification.sellerChecklist(seller.id);
+    return {
+      missing: check?.missing ?? [],
+      complete: check?.complete ?? false,
+      isVerified: check?.profile?.isVerified ?? false,
+      infoRequested: check?.profile?.infoRequested ?? null,
+      memberSince: check?.profile?.createdAt ?? null,
+    };
+  }
+
+  // Admin: ask a seller for missing details
+  @Post(':id/request-info')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  requestInfo(@Param('id') id: string, @Body('message') message: string) {
+    if (!message?.trim()) throw new BadRequestException('Tell the seller what is missing');
+    return this.verification.requestInfo('seller', id, message.trim());
+  }
+
+  // Admin: record the face-check result; auto-verifies when it completes
+  @Post(':id/face-check')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  faceCheck(@Param('id') id: string, @Body('passed') passed: boolean) {
+    return this.verification.setFaceVerified('seller', id, passed !== false);
+  }
+
+  // Admin: re-run the checklist
+  @Post(':id/evaluate')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  evaluate(@Param('id') id: string) {
+    return this.verification.evaluateSeller(id);
+  }
 
   @Post('onboard') onboard(@CurrentUser('id') id: string, @Body() dto: any) { return this.sellersService.onboard(id, dto); }
   @Get('me') getProfile(@CurrentUser('id') id: string) { return this.sellersService.getMyProfile(id); }
