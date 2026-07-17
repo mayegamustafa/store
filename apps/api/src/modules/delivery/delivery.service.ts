@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { DeliveryStatus, OrderStatus } from '@prisma/client';
@@ -21,15 +21,150 @@ export class DeliveryService {
     }
   }
 
-  async assignRider(orderId: string, riderId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+  private static haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+    const R = 6371;
+    const dLat = ((bLat - aLat) * Math.PI) / 180;
+    const dLng = ((bLng - aLng) * Math.PI) / 180;
+    const s =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+
+  /**
+   * Online riders sorted by distance from the pickup point for an order.
+   * Pickup = the seller's shop location; falls back to the delivery address
+   * so it still ranks sensibly when a shop hasn't set coordinates.
+   * `requesterUserId` (a seller) may only query their own orders.
+   */
+  async getNearbyRiders(orderId: string, requesterUserId?: string, requesterRole?: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        address: { select: { latitude: true, longitude: true } },
+        items: { select: { sellerId: true } },
+      },
+    });
     if (!order) throw new NotFoundException('Order not found');
+
+    // Sellers can only look at orders that include their items
+    if (requesterRole === 'SELLER') {
+      const seller = await this.prisma.sellerProfile.findUnique({
+        where: { userId: requesterUserId },
+        select: { id: true, storeLat: true, storeLng: true },
+      });
+      if (!seller || !order.items.some((i) => i.sellerId === seller.id)) {
+        throw new ForbiddenException('This order does not belong to your store');
+      }
+    }
+
+    // Pickup reference: first seller's shop with coordinates, else dropoff
+    let refLat: number | null = null;
+    let refLng: number | null = null;
+    const sellerIds = [...new Set(order.items.map((i) => i.sellerId))];
+    const sellers = await this.prisma.sellerProfile.findMany({
+      where: { id: { in: sellerIds } },
+      select: { storeLat: true, storeLng: true },
+    });
+    const withCoords = sellers.find((s) => s.storeLat != null && s.storeLng != null);
+    if (withCoords) {
+      refLat = withCoords.storeLat!;
+      refLng = withCoords.storeLng!;
+    } else if (order.address?.latitude != null && order.address?.longitude != null) {
+      refLat = order.address.latitude;
+      refLng = order.address.longitude;
+    }
+
+    const riders = await this.prisma.riderProfile.findMany({
+      where: { isOnline: true, status: 'ACTIVE' },
+      select: {
+        id: true,
+        vehicleType: true,
+        rating: true,
+        currentLat: true,
+        currentLng: true,
+        lastLocationAt: true,
+        isVerified: true,
+        user: { select: { firstName: true, lastName: true, phone: true, avatar: true } },
+        _count: { select: { deliveries: true } },
+        deliveries: {
+          where: { status: { in: ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'] } },
+          select: { id: true },
+        },
+      },
+    });
+
+    const mapped = riders.map((r) => {
+      const hasLoc = r.currentLat != null && r.currentLng != null;
+      const distanceKm =
+        hasLoc && refLat != null && refLng != null
+          ? DeliveryService.haversineKm(refLat, refLng, r.currentLat!, r.currentLng!)
+          : null;
+      return {
+        id: r.id,
+        name: `${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}`.trim() || 'Rider',
+        phone: r.user?.phone,
+        avatar: r.user?.avatar,
+        vehicleType: r.vehicleType,
+        rating: r.rating,
+        isVerified: r.isVerified,
+        activeJobs: r.deliveries.length,
+        location: hasLoc ? { lat: r.currentLat, lng: r.currentLng, updatedAt: r.lastLocationAt } : null,
+        distanceKm: distanceKm != null ? Math.round(distanceKm * 10) / 10 : null,
+      };
+    });
+
+    // Nearest first; riders without a location go last; fewer active jobs breaks ties
+    mapped.sort((a, b) => {
+      if (a.distanceKm == null && b.distanceKm == null) return a.activeJobs - b.activeJobs;
+      if (a.distanceKm == null) return 1;
+      if (b.distanceKm == null) return -1;
+      if (a.distanceKm !== b.distanceKm) return a.distanceKm - b.distanceKm;
+      return a.activeJobs - b.activeJobs;
+    });
+
+    return { pickup: refLat != null ? { lat: refLat, lng: refLng } : null, riders: mapped };
+  }
+
+  async assignRider(orderId: string, riderId: string, sellerUserId?: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { select: { sellerId: true } } },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Seller path: enforce the order contains their items
+    if (sellerUserId) {
+      const seller = await this.prisma.sellerProfile.findUnique({
+        where: { userId: sellerUserId },
+        select: { id: true },
+      });
+      if (!seller || !order.items.some((i) => i.sellerId === seller.id)) {
+        throw new ForbiddenException('This order does not belong to your store');
+      }
+    }
 
     const delivery = await this.prisma.delivery.upsert({
       where: { orderId },
       create: { orderId, riderId, status: 'ASSIGNED' },
       update: { riderId, status: 'ASSIGNED' },
     });
+
+    // Notify the assigned rider (push + in-app)
+    const rider = await this.prisma.riderProfile.findUnique({
+      where: { id: riderId },
+      select: { userId: true },
+    });
+    if (rider?.userId) {
+      void this.notifications
+        .sendToUser(rider.userId, 'RIDER_ASSIGNED' as any,
+          { order_number: order.orderNumber, order_id: order.id,
+            title: 'New delivery assigned',
+            body: `You've been assigned order ${order.orderNumber}. Open the app to accept.` },
+          { channels: ['PUSH', 'IN_APP'] as any, route: '/deliveries/' + delivery.id,
+            fallbackSms: `TotalStore: new delivery ${order.orderNumber} assigned to you.` })
+        .catch(() => null);
+    }
 
     // Update order status to SHIPPED
     await this.prisma.order.update({ where: { id: orderId }, data: { status: 'SHIPPED' } });

@@ -287,6 +287,8 @@ model SellerProfile {
   storeSlug        String       @unique
   storeLogo        String?
   storeBanner      String?
+  storeLat         Float?       // shop location — used to find nearby riders
+  storeLng         Float?
   storeDescription String?
   status           SellerStatus @default(PENDING)
   kycStatus        KycStatus    @default(NOT_SUBMITTED)

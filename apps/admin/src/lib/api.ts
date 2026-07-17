@@ -134,6 +134,7 @@ export const adminApi = {
   getOrderTrackingSnapshot: (orderId: string) =>
     api.get(`/delivery/orders/${orderId}`),
   getActiveDeliveries: () => api.get('/admin/orders', { params: { status: 'OUT_FOR_DELIVERY', limit: 100 } }),
+  getNearbyRiders: (orderId: string) => api.get(`/delivery/orders/${orderId}/nearby-riders`),
   assignRiderToOrder: (orderId: string, riderId: string) =>
     api.post(`/delivery/orders/${orderId}/assign`, { riderId }),
   getApprovedRiders: () =>

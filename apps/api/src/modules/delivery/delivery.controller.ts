@@ -25,11 +25,27 @@ export class DeliveryController {
 
   @Get('orders/:orderId') getDelivery(@Param('orderId') id: string) { return this.service.getDelivery(id); }
 
+  // Online riders sorted by distance from the pickup shop — admin sees all
+  // orders; a seller may only query orders containing their items.
+  @Get('orders/:orderId/nearby-riders')
+  @ApiOperation({ summary: 'Nearby online riders for an order (admin or owning seller)' })
+  nearbyRiders(@Param('orderId') orderId: string, @Req() req: any) {
+    return this.service.getNearbyRiders(orderId, req.user?.id, req.user?.role);
+  }
+
   @Post('orders/:orderId/assign')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @UseGuards(RolesGuard)
   assign(@Param('orderId') orderId: string, @Body('riderId') riderId: string) {
     return this.service.assignRider(orderId, riderId);
+  }
+
+  // A seller assigns a rider to their own order (ownership enforced in service)
+  @Post('orders/:orderId/seller-assign')
+  @Roles(Role.SELLER)
+  @UseGuards(RolesGuard)
+  sellerAssign(@Param('orderId') orderId: string, @Body('riderId') riderId: string, @Req() req: any) {
+    return this.service.assignRider(orderId, riderId, req.user?.id);
   }
 
   @Get('pending')

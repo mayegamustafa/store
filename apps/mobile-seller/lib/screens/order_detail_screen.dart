@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/orders_provider.dart';
 import '../core/money.dart';
+import '../core/api_service.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
@@ -69,6 +70,121 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       default:
         return AppTheme.textSecondary;
     }
+  }
+
+  bool _assigning = false;
+
+  Future<void> _showNearbyRiders() async {
+    setState(() => _assigning = true);
+    List<dynamic> riders = [];
+    try {
+      final res = await ApiService().dio
+          .get('/delivery/orders/${widget.orderId}/nearby-riders');
+      final data = ApiService().extractData(res);
+      riders = (data is Map ? data['riders'] : data) as List? ?? [];
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _assigning = false);
+
+    if (riders.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No online riders nearby right now — try again shortly')));
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (ctx, scroll) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2))),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Nearby riders',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            Expanded(
+              child: ListView.separated(
+                controller: scroll,
+                itemCount: riders.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, i) {
+                  final r = riders[i] as Map<String, dynamic>;
+                  final dist = r['distanceKm'];
+                  final verified = r['isVerified'] == true;
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+                      backgroundImage: (r['avatar'] != null &&
+                              (r['avatar'] as String).isNotEmpty)
+                          ? NetworkImage(r['avatar'])
+                          : null,
+                      child: (r['avatar'] == null ||
+                              (r['avatar'] as String).isEmpty)
+                          ? const Icon(Icons.two_wheeler_rounded,
+                              color: AppTheme.primary)
+                          : null,
+                    ),
+                    title: Row(children: [
+                      Flexible(child: Text(r['name']?.toString() ?? 'Rider')),
+                      if (verified) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified_rounded,
+                            size: 14, color: Colors.amber),
+                      ],
+                    ]),
+                    subtitle: Text([
+                      if (dist != null) '$dist km away',
+                      if (r['vehicleType'] != null) r['vehicleType'],
+                      '${r['activeJobs'] ?? 0} active',
+                    ].join(' · ')),
+                    trailing: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await _assignRider(r['id'] as String);
+                      },
+                      child: const Text('Assign'),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _assignRider(String riderId) async {
+    setState(() => _assigning = true);
+    try {
+      await ApiService().dio.post(
+          '/delivery/orders/${widget.orderId}/seller-assign',
+          data: {'riderId': riderId});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Rider assigned — they have been notified'),
+          backgroundColor: AppTheme.success));
+      await context.read<OrdersProvider>().load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ApiService().errorMessage(e).isNotEmpty
+              ? ApiService().errorMessage(e)
+              : 'Failed to assign rider')));
+    }
+    if (mounted) setState(() => _assigning = false);
   }
 
   Future<void> _updateStatus(String newStatus) async {
@@ -265,6 +381,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               child: Text(_actionLabel(next)),
             ),
           ),
+        if (['CONFIRMED', 'PROCESSING', 'SHIPPED'].contains(status)) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 52,
+            child: OutlinedButton.icon(
+              onPressed: _assigning ? null : _showNearbyRiders,
+              icon: _assigning
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.two_wheeler_rounded),
+              label: const Text('Assign a nearby rider'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primary,
+                side: const BorderSide(color: AppTheme.primary),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
         if (status == 'PENDING') ...[
           const SizedBox(height: 12),
           SizedBox(
