@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../core/theme.dart';
@@ -6,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/orders_provider.dart';
 import '../providers/wallet_provider.dart';
 import '../core/money.dart';
+import '../core/api_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,6 +16,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  Map<String, dynamic>? _trend;
+
   @override
   void initState() {
     super.initState();
@@ -24,7 +28,125 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await Future.wait([
       context.read<OrdersProvider>().load(),
       context.read<WalletProvider>().load(),
+      _loadTrend(),
     ]);
+  }
+
+  Future<void> _loadTrend() async {
+    try {
+      final api = ApiService();
+      final res = await api.dio
+          .get('/sellers/me/sales-trend', queryParameters: {'days': 14});
+      final data = api.extractData(res);
+      if (mounted && data is Map) {
+        setState(() => _trend = Map<String, dynamic>.from(data));
+      }
+    } catch (_) {}
+  }
+
+  /// Revenue bars + order-count line for the last 14 days.
+  Widget _buildTrendCharts() {
+    final series = (_trend?['series'] as List?) ?? [];
+    if (series.isEmpty) return const SizedBox.shrink();
+
+    final revenue =
+        series.map((d) => (d['revenue'] as num?)?.toDouble() ?? 0).toList();
+    final orders =
+        series.map((d) => (d['orders'] as num?)?.toDouble() ?? 0).toList();
+    final maxRev = revenue.reduce((a, b) => a > b ? a : b);
+    final maxOrd = orders.reduce((a, b) => a > b ? a : b);
+
+    Widget card({required String title, required String subtitle, required Widget chart}) =>
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              Text(subtitle,
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.textSecondary)),
+              const SizedBox(height: 16),
+              SizedBox(height: 150, child: chart),
+            ],
+          ),
+        );
+
+    const hidden = FlTitlesData(
+      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    );
+
+    return Column(
+      children: [
+        card(
+          title: 'Revenue — last 14 days',
+          subtitle: 'Total ${Money.fmt(_trend?['totalRevenue'] ?? 0)}',
+          chart: BarChart(BarChartData(
+            maxY: maxRev == 0 ? 1 : maxRev * 1.2,
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            titlesData: hidden,
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipItem: (g, _, rod, __) => BarTooltipItem(
+                  Money.fmt(rod.toY),
+                  const TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ),
+            ),
+            barGroups: [
+              for (var i = 0; i < revenue.length; i++)
+                BarChartGroupData(x: i, barRods: [
+                  BarChartRodData(
+                    toY: revenue[i],
+                    color: AppTheme.primary,
+                    width: 8,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(3)),
+                  ),
+                ]),
+            ],
+          )),
+        ),
+        card(
+          title: 'Orders — last 14 days',
+          subtitle: '${(_trend?['totalOrders'] ?? 0)} orders',
+          chart: LineChart(LineChartData(
+            maxY: maxOrd == 0 ? 1 : maxOrd + 1,
+            minY: 0,
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            titlesData: hidden,
+            lineBarsData: [
+              LineChartBarData(
+                spots: [
+                  for (var i = 0; i < orders.length; i++)
+                    FlSpot(i.toDouble(), orders[i]),
+                ],
+                isCurved: true,
+                color: AppTheme.success,
+                barWidth: 3,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: AppTheme.success.withValues(alpha: 0.12),
+                ),
+              ),
+            ],
+          )),
+        ),
+      ],
+    );
   }
 
   @override
@@ -128,6 +250,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 24),
+            _buildTrendCharts(),
             // Recent orders
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

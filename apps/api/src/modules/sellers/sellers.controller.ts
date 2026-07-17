@@ -63,6 +63,10 @@ export class SellersController {
     return this.verification.evaluateSeller(id);
   }
 
+  @Get('me/sales-trend') salesTrend(@CurrentUser('id') id: string, @Query('days') days?: string) {
+    return this.sellersService.getSalesTrend(id, Number(days) || 14);
+  }
+
   @Post('onboard') onboard(@CurrentUser('id') id: string, @Body() dto: any) { return this.sellersService.onboard(id, dto); }
   @Get('me') getProfile(@CurrentUser('id') id: string) { return this.sellersService.getMyProfile(id); }
   @Patch('me') updateProfile(@CurrentUser('id') id: string, @Body() dto: any) { return this.sellersService.updateProfile(id, dto); }

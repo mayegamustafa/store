@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
-import { CheckCircle, XCircle, Search, Truck, Ban, RotateCcw, MapPin, Phone, UserPlus } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Truck, Ban, RotateCcw, MapPin, Phone, UserPlus, BadgeCheck, MessageSquareWarning, ScanFace } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'];
@@ -34,6 +34,25 @@ export default function RidersPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['admin-riders'] });
 
   const approve  = useMutation({ mutationFn: (id: string) => adminApi.approveRider(id),  onSuccess: () => { invalidate(); toast.success('Rider approved!'); } });
+  const requestInfo = useMutation({
+    mutationFn: ({ id, message }: { id: string; message: string }) => adminApi.requestRiderInfo(id, message),
+    onSuccess: () => { invalidate(); toast.success('Rider notified about the missing details'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to send request'),
+  });
+  const faceCheck = useMutation({
+    mutationFn: ({ id, passed }: { id: string; passed: boolean }) => adminApi.riderFaceCheck(id, passed),
+    onSuccess: () => { invalidate(); toast.success('Face check recorded'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to record'),
+  });
+
+  function askForInfo(rider: any) {
+    const message = window.prompt(
+      `What does ${rider.user?.name || 'this rider'} still need to provide?\n(They get a push notification with this message.)`,
+      'Please upload a clear photo of your driving licence and a profile photo.',
+    );
+    if (!message?.trim()) return;
+    requestInfo.mutate({ id: rider.id, message: message.trim() });
+  }
   const reject   = useMutation({ mutationFn: ({ id, reason }: { id: string; reason: string }) => adminApi.rejectRider(id, reason), onSuccess: () => { invalidate(); setRejectingId(null); setRejectReason(''); toast.success('Rider rejected'); } });
   const suspend  = useMutation({ mutationFn: (id: string) => adminApi.suspendRider(id),  onSuccess: () => { invalidate(); toast.success('Rider suspended'); } });
   const unsuspend = useMutation({ mutationFn: (id: string) => adminApi.unsuspendRider(id), onSuccess: () => { invalidate(); toast.success('Rider reactivated'); } });
@@ -192,7 +211,12 @@ export default function RidersPage() {
                       <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-bold text-sm">
                         {rider.user?.name?.[0] || 'R'}
                       </div>
-                      <span className="font-medium text-sm">{rider.user?.name}</span>
+                      <span className="font-medium text-sm flex items-center gap-1">
+                        {rider.user?.name}
+                        {rider.isVerified && (
+                          <BadgeCheck className="w-4 h-4 text-amber-500" aria-label="Verified & trusted" />
+                        )}
+                      </span>
                     </div>
                   </td>
                   <td className="table-td text-xs text-slate-500">
@@ -228,6 +252,22 @@ export default function RidersPage() {
                       <button onClick={() => setViewRider(rider)} className="text-sky-600 hover:text-sky-700" title="View">
                         <Truck className="w-4 h-4" />
                       </button>
+                      <button onClick={() => askForInfo(rider)} className="text-amber-600 hover:text-amber-700" title="Request more information">
+                        <MessageSquareWarning className="w-4 h-4" />
+                      </button>
+                      {!rider.faceVerified && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Confirm the selfie matches the ID photo for ${rider.user?.name || 'this rider'}?\n\nPassing the face check may auto-verify them.`)) {
+                              faceCheck.mutate({ id: rider.id, passed: true });
+                            }
+                          }}
+                          className="text-violet-600 hover:text-violet-700"
+                          title="Pass face verification"
+                        >
+                          <ScanFace className="w-4 h-4" />
+                        </button>
+                      )}
                       {rider.status === 'PENDING' && (
                         <>
                           <button onClick={() => approve.mutate(rider.id)} className="text-green-600 hover:text-green-700" title="Approve"><CheckCircle className="w-4 h-4" /></button>

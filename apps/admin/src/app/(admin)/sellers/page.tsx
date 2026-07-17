@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
-import { CheckCircle, XCircle, Eye, Search, Store, Ban, RotateCcw, Building2, Plus, X } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Search, Store, Ban, RotateCcw, Building2, Plus, X, BadgeCheck, MessageSquareWarning, ScanFace } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'];
@@ -33,6 +33,27 @@ export default function SellersPage() {
     },
     onError: () => toast.error('Failed to update'),
   });
+
+  const requestInfoMutation = useMutation({
+    mutationFn: ({ id, message }: { id: string; message: string }) => adminApi.requestSellerInfo(id, message),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-sellers'] }); toast.success('Seller notified about the missing details'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to send request'),
+  });
+
+  const faceCheckMutation = useMutation({
+    mutationFn: ({ id, passed }: { id: string; passed: boolean }) => adminApi.sellerFaceCheck(id, passed),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-sellers'] }); toast.success('Face check recorded'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to record'),
+  });
+
+  function askSellerForInfo(seller: any) {
+    const message = window.prompt(
+      `What does ${seller.storeName || 'this seller'} still need to provide?\n(They get a push notification with this message.)`,
+      'Please upload your National ID and a profile photo to complete verification.',
+    );
+    if (!message?.trim()) return;
+    requestInfoMutation.mutate({ id: seller.id, message: message.trim() });
+  }
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => adminApi.approveSeller(id),
@@ -222,6 +243,9 @@ export default function SellersPage() {
                       </div>
                       <div>
                         <span className="font-medium">{seller.storeName}</span>
+                        {seller.isVerified && (
+                          <BadgeCheck className="inline-block w-4 h-4 text-amber-500 ml-1 -mt-0.5" aria-label="Verified & trusted" />
+                        )}
                         {seller.isOfficial && (
                           <span className="ml-2 text-xs bg-amber-100 text-amber-700 font-semibold px-1.5 py-0.5 rounded-full">Official Store</span>
                         )}
@@ -275,6 +299,22 @@ export default function SellersPage() {
                       <button className="text-sky-600 hover:text-sky-700" title="View KYC">
                         <Eye className="w-4 h-4" />
                       </button>
+                      <button onClick={() => askSellerForInfo(seller)} className="text-amber-600 hover:text-amber-700" title="Request more information">
+                        <MessageSquareWarning className="w-4 h-4" />
+                      </button>
+                      {!seller.faceVerified && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Confirm the selfie matches the ID photo for ${seller.storeName || 'this seller'}?\n\nPassing the face check may auto-verify them.`)) {
+                              faceCheckMutation.mutate({ id: seller.id, passed: true });
+                            }
+                          }}
+                          className="text-violet-600 hover:text-violet-700"
+                          title="Pass face verification"
+                        >
+                          <ScanFace className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => markOfficialMutation.mutate({ id: seller.id, isOfficial: !seller.isOfficial })}
                         className={seller.isOfficial ? 'text-amber-500 hover:text-amber-700' : 'text-slate-400 hover:text-amber-500'}

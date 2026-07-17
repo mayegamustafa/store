@@ -252,6 +252,14 @@ export const adminApi = {
   getPendingDeliveries: () => api.get('/delivery/pending'),
   getOrderTracking: (orderId: string) => api.get(`/delivery/orders/${orderId}/tracking`),
 
+  // ── Verification / trust (riders + sellers) ────────────────────────────────
+  requestRiderInfo: (id: string, message: string) => api.post(`/riders/${id}/request-info`, { message }),
+  riderFaceCheck: (id: string, passed: boolean) => api.post(`/riders/${id}/face-check`, { passed }),
+  evaluateRider: (id: string) => api.post(`/riders/${id}/evaluate`),
+  requestSellerInfo: (id: string, message: string) => api.post(`/sellers/${id}/request-info`, { message }),
+  sellerFaceCheck: (id: string, passed: boolean) => api.post(`/sellers/${id}/face-check`, { passed }),
+  evaluateSeller: (id: string) => api.post(`/sellers/${id}/evaluate`),
+
   // ── Email management (ImprovMX aliases + logs) ─────────────────────────────
   getEmailStatus: () => api.get('/email/status'),
   checkEmailDns: () => api.get('/email/dns'),

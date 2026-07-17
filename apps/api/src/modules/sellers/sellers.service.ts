@@ -27,6 +27,64 @@ export class SellersService {
     return this.prisma.sellerProfile.update({ where: { userId }, data: dto });
   }
 
+  /**
+   * Daily revenue + order counts for the last N days — powers the seller
+   * app's dashboard charts. Dense (zero-filled) series, ready to plot.
+   */
+  async getSalesTrend(userId: string, days = 14) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!seller) throw new NotFoundException('Seller profile not found');
+
+    const span = Math.min(Math.max(Number(days) || 14, 1), 90);
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    since.setDate(since.getDate() - (span - 1));
+
+    const items = await this.prisma.orderItem.findMany({
+      where: {
+        sellerId: seller.id,
+        order: { createdAt: { gte: since }, status: { not: 'CANCELLED' } },
+      },
+      select: {
+        sellerEarning: true,
+        subtotal: true,
+        orderId: true,
+        order: { select: { createdAt: true } },
+      },
+    });
+
+    const key = (d: Date) => d.toISOString().slice(0, 10);
+    const revenue = new Map<string, number>();
+    const orderIds = new Map<string, Set<string>>();
+    for (const it of items) {
+      const k = key(it.order.createdAt);
+      revenue.set(k, (revenue.get(k) ?? 0) + Number(it.sellerEarning ?? it.subtotal));
+      if (!orderIds.has(k)) orderIds.set(k, new Set());
+      orderIds.get(k)!.add(it.orderId);
+    }
+
+    const series: { date: string; revenue: number; orders: number }[] = [];
+    for (let i = 0; i < span; i++) {
+      const d = new Date(since);
+      d.setDate(since.getDate() + i);
+      const k = key(d);
+      series.push({
+        date: k,
+        revenue: revenue.get(k) ?? 0,
+        orders: orderIds.get(k)?.size ?? 0,
+      });
+    }
+    return {
+      days: span,
+      series,
+      totalRevenue: series.reduce((a, b) => a + b.revenue, 0),
+      totalOrders: series.reduce((a, b) => a + b.orders, 0),
+    };
+  }
+
   async getDashboard(userId: string) {
     const seller = await this.prisma.sellerProfile.findUnique({ where: { userId } });
     if (!seller) throw new NotFoundException('Seller profile not found');
