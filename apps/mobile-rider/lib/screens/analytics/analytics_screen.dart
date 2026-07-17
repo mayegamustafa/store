@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_service.dart';
@@ -16,6 +17,7 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final _api = ApiService();
   Map<String, dynamic>? _earnings;
+  Map<String, dynamic>? _trend;
   bool _loading = true;
 
   @override
@@ -26,8 +28,136 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final e = await _api.getEarnings();
-    if (mounted) setState(() { _earnings = e; _loading = false; });
+    final results = await Future.wait([
+      _api.getEarnings(),
+      _api.getEarningsTrend(days: 14),
+    ]);
+    if (mounted) {
+      setState(() {
+        _earnings = results[0];
+        _trend = results[1];
+        _loading = false;
+      });
+    }
+  }
+
+  /// Bar chart of the last 14 days' earnings + a line of daily deliveries.
+  Widget _buildTrendCharts() {
+    final series = (_trend?['series'] as List?) ?? [];
+    if (series.isEmpty) return const SizedBox.shrink();
+
+    final earnings = series
+        .map((d) => (d['earnings'] as num?)?.toDouble() ?? 0)
+        .toList();
+    final deliveries = series
+        .map((d) => (d['deliveries'] as num?)?.toDouble() ?? 0)
+        .toList();
+    final maxEarn = earnings.isEmpty
+        ? 1.0
+        : earnings.reduce((a, b) => a > b ? a : b);
+    final maxDel = deliveries.isEmpty
+        ? 1.0
+        : deliveries.reduce((a, b) => a > b ? a : b);
+
+    Widget card({required String title, required String subtitle, required Widget chart}) =>
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+              Text(subtitle,
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.textSecondary)),
+              const SizedBox(height: 16),
+              SizedBox(height: 150, child: chart),
+            ],
+          ),
+        );
+
+    return Column(
+      children: [
+        card(
+          title: 'Earnings — last 14 days',
+          subtitle: 'Total ${Money.fmt(_trend?['totalEarnings'] ?? 0)}',
+          chart: BarChart(
+            BarChartData(
+              maxY: maxEarn == 0 ? 1 : maxEarn * 1.2,
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              titlesData: const FlTitlesData(
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              barTouchData: BarTouchData(
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                    Money.fmt(rod.toY),
+                    const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                ),
+              ),
+              barGroups: [
+                for (var i = 0; i < earnings.length; i++)
+                  BarChartGroupData(x: i, barRods: [
+                    BarChartRodData(
+                      toY: earnings[i],
+                      color: AppTheme.primaryGreen,
+                      width: 8,
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(3)),
+                    ),
+                  ]),
+              ],
+            ),
+          ),
+        ),
+        card(
+          title: 'Deliveries — last 14 days',
+          subtitle: '${(_trend?['totalDeliveries'] ?? 0)} completed',
+          chart: LineChart(
+            LineChartData(
+              maxY: maxDel == 0 ? 1 : maxDel + 1,
+              minY: 0,
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              titlesData: const FlTitlesData(
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: [
+                    for (var i = 0; i < deliveries.length; i++)
+                      FlSpot(i.toDouble(), deliveries[i]),
+                  ],
+                  isCurved: true,
+                  color: AppTheme.primary,
+                  barWidth: 3,
+                  dotData: const FlDotData(show: false),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: AppTheme.primary.withValues(alpha: 0.12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   String _fmt(dynamic val) {
@@ -184,6 +314,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
+
+                        // Trend charts (earnings + deliveries)
+                        _buildTrendCharts(),
 
                         // Performance section
                         const Text('Performance',

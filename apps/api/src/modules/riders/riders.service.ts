@@ -233,6 +233,58 @@ export class RidersService {
     return updated;
   }
 
+  /**
+   * Daily earnings + delivery counts for the last N days — powers the rider
+   * app's analytics charts. Returns a dense series (zero-filled) so the
+   * client can plot it directly.
+   */
+  async getEarningsTrend(userId: string, days = 14) {
+    const rider = await this.prisma.riderProfile.findUnique({ where: { userId }, select: { id: true } });
+    if (!rider) throw new NotFoundException('Rider profile not found');
+
+    const span = Math.min(Math.max(Number(days) || 14, 1), 90);
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    since.setDate(since.getDate() - (span - 1));
+
+    const [txns, deliveries] = await Promise.all([
+      this.prisma.riderWalletTransaction.findMany({
+        where: { riderId: rider.id, type: 'credit', createdAt: { gte: since } },
+        select: { amount: true, createdAt: true },
+      }),
+      this.prisma.delivery.findMany({
+        where: { riderId: rider.id, status: 'DELIVERED', updatedAt: { gte: since } },
+        select: { updatedAt: true },
+      }),
+    ]);
+
+    const key = (d: Date) => d.toISOString().slice(0, 10);
+    const earned = new Map<string, number>();
+    const count = new Map<string, number>();
+    for (const t of txns) {
+      const k = key(t.createdAt);
+      earned.set(k, (earned.get(k) ?? 0) + Number(t.amount));
+    }
+    for (const d of deliveries) {
+      const k = key(d.updatedAt);
+      count.set(k, (count.get(k) ?? 0) + 1);
+    }
+
+    const series: { date: string; earnings: number; deliveries: number }[] = [];
+    for (let i = 0; i < span; i++) {
+      const d = new Date(since);
+      d.setDate(since.getDate() + i);
+      const k = key(d);
+      series.push({ date: k, earnings: earned.get(k) ?? 0, deliveries: count.get(k) ?? 0 });
+    }
+    return {
+      days: span,
+      series,
+      totalEarnings: series.reduce((a, b) => a + b.earnings, 0),
+      totalDeliveries: series.reduce((a, b) => a + b.deliveries, 0),
+    };
+  }
+
   async getEarnings(userId: string) {
     const rider = await this.prisma.riderProfile.findUnique({ where: { userId } });
     if (!rider) throw new NotFoundException('Rider profile not found');

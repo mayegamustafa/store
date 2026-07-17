@@ -144,6 +144,18 @@ class ApiService {
     }
   }
 
+  /// Daily earnings + delivery counts for the analytics charts.
+  Future<Map<String, dynamic>?> getEarningsTrend({int days = 14}) async {
+    try {
+      final res = await _dio.get('/riders/me/earnings/trend', queryParameters: {'days': days});
+      final d = res.data;
+      final body = d is Map && d.containsKey('data') ? d['data'] : d;
+      return body is Map ? Map<String, dynamic>.from(body) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<dynamic>> getWalletTransactions({int page = 1}) async {
     try {
       final res = await _dio.get('/wallet/rider/transactions', queryParameters: {'page': page});

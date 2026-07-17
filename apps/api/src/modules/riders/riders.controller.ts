@@ -68,6 +68,9 @@ export class RidersController {
     return this.ridersService.updateDeliveryStatus(id, userId, dto);
   }
   @Get('me/earnings') getEarnings(@CurrentUser('id') id: string) { return this.ridersService.getEarnings(id); }
+  @Get('me/earnings/trend') getEarningsTrend(@CurrentUser('id') id: string, @Query('days') days?: string) {
+    return this.ridersService.getEarningsTrend(id, Number(days) || 14);
+  }
   @Post('location') updateLocation(@CurrentUser('id') id: string, @Body() dto: any) { return this.ridersService.updateLocation(id, dto); }
 
   @Get('all')
