@@ -122,7 +122,7 @@ class ApiService {
   }
 
   Future<void> updateFcmToken(String token) async {
-    try { await _dio.post('/auth/fcm-token', data: {'token': token}); } catch (_) {}
+    try { await _dio.patch('/auth/fcm-token', data: {'fcmToken': token}); } catch (_) {}
   }
 
   // Wallet endpoints
