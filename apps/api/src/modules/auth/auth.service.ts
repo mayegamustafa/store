@@ -285,27 +285,41 @@ export class AuthService {
   }
 
   // ── Forgot Password ─────────────────────────────────────────────────────────
-  async forgotPassword(email: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+  // Accepts an email OR a phone number. Phone → SMS OTP (needs SMS provider
+  // configured); email → email OTP (needs SMTP configured).
+  async forgotPassword(identifier: string) {
+    const id = (identifier || '').trim();
+    const isPhone = !id.includes('@');
+    const user = isPhone
+      ? await this.prisma.user.findUnique({ where: { phone: id } })
+      : await this.prisma.user.findUnique({ where: { email: id } });
 
-    // Always return success to prevent email enumeration
-    if (!user) {
-      return { message: 'If that email is registered, a reset code has been sent.' };
+    // Always return success to prevent account enumeration
+    const generic = isPhone
+      ? { message: 'If that phone is registered, a reset code has been sent by SMS.' }
+      : { message: 'If that email is registered, a reset code has been sent.' };
+    if (!user) return generic;
+
+    if (isPhone && user.phone) {
+      await this.sendPhoneOtp(user.phone, user.id, 'password_reset');
+    } else if (user.email) {
+      await this.sendEmailOtp(user.email, user.id, 'password_reset');
     }
-
-    await this.sendEmailOtp(email, user.id, 'password_reset');
-
-    return { message: 'If that email is registered, a reset code has been sent.' };
+    return generic;
   }
 
   // ── Reset Password ──────────────────────────────────────────────────────────
-  async resetPassword(email: string, code: string, newPassword: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new BadRequestException('Invalid email or code');
+  async resetPassword(identifier: string, code: string, newPassword: string) {
+    const id = (identifier || '').trim();
+    const isPhone = !id.includes('@');
+    const user = isPhone
+      ? await this.prisma.user.findUnique({ where: { phone: id } })
+      : await this.prisma.user.findUnique({ where: { email: id } });
+    if (!user) throw new BadRequestException('Invalid account or code');
 
     const otp = await this.prisma.otpCode.findFirst({
       where: {
-        email,
+        ...(isPhone ? { phone: id } : { email: id }),
         code,
         type: 'password_reset',
         usedAt: null,

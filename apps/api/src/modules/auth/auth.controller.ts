@@ -18,14 +18,17 @@ import { PhoneOtpDto, VerifyOtpDto, RefreshTokenDto } from './dto/otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
 
 class ForgotPasswordDto {
-  @IsEmail() email: string;
+  // Email or phone number (legacy clients send `email`)
+  @IsString() @IsOptional() identifier?: string;
+  @IsString() @IsOptional() email?: string;
 }
 
 class ResetPasswordDto {
-  @IsEmail() email: string;
+  @IsString() @IsOptional() identifier?: string;
+  @IsString() @IsOptional() email?: string;
   @IsString() @IsNotEmpty() code: string;
   @IsString() @MinLength(6) newPassword: string;
 }
@@ -117,7 +120,7 @@ export class AuthController {
   @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Send password reset OTP to email' })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto.email);
+    return this.authService.forgotPassword(dto.identifier || dto.email || '');
   }
 
   @Public()
@@ -125,6 +128,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password with OTP code' })
   resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto.email, dto.code, dto.newPassword);
+    return this.authService.resetPassword(dto.identifier || dto.email || '', dto.code, dto.newPassword);
   }
 }
