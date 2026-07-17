@@ -86,6 +86,9 @@ class NotificationService {
 
     final androidPlugin = _localNotifs
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    // Android 13+ needs the explicit runtime prompt — FCM's requestPermission
+    // alone often doesn't surface the system dialog.
+    await androidPlugin?.requestNotificationsPermission();
     await androidPlugin?.createNotificationChannel(_channel);
 
     // Channel targeted by the SERVER's FCM pushes (channelId 'totalstore_high').

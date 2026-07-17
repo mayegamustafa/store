@@ -103,7 +103,7 @@ export class RidersService {
       include: {
         order: {
           include: {
-            buyer: { select: { firstName: true, phone: true } },
+            buyer: { select: { id: true, firstName: true, lastName: true, phone: true } },
             address: true,
             items: { include: { product: { select: { name: true, images: true } } } },
           },

@@ -50,6 +50,9 @@ class NotificationService {
     );
     await _localNotifs
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    await _localNotifs
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
     // Channel targeted by the SERVER's FCM pushes (channelId 'totalstore_high').

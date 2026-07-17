@@ -11,6 +11,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/services/app_config.dart';
 import '../../providers/delivery_provider.dart';
 import '../../core/money.dart';
+import '../../core/api/api_service.dart';
+import '../chat/chat_thread_screen.dart';
 
 class DeliveryDetailScreen extends StatefulWidget {
   final String deliveryId;
@@ -190,9 +192,65 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
     }
   }
 
-  void _callBuyer(String? phone) {
-    if (phone == null || phone.isEmpty) return;
-    launchUrl(Uri.parse('tel:$phone'));
+  bool _messagingBuyer = false;
+
+  /// Start (or resume) a rider↔buyer conversation for this order and open it.
+  Future<void> _messageBuyer(Map<String, dynamic> buyer, Map<String, dynamic> order) async {
+    final buyerId = buyer['id'] as String?;
+    if (buyerId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cannot message this customer')));
+      }
+      return;
+    }
+    setState(() => _messagingBuyer = true);
+    try {
+      final res = await ApiService().dio.post('/chat/conversations', data: {
+        'targetUserId': buyerId,
+        'type': 'BUYER_RIDER',
+        'orderId': order['id'] ?? widget.deliveryId,
+      });
+      final conv = res.data is Map && res.data['data'] != null
+          ? res.data['data']
+          : res.data;
+      if (!mounted) return;
+      setState(() => _messagingBuyer = false);
+      if (conv is Map && conv['id'] != null) {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => ChatThreadScreen(
+              conversation: Map<String, dynamic>.from(conv)),
+        ));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _messagingBuyer = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open chat — try again')));
+    }
+  }
+
+  Future<void> _callBuyer(String? phone) async {
+    if (phone == null || phone.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No phone number for this customer')));
+      }
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: phone.replaceAll(' ', ''));
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open the dialer')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open the dialer')));
+      }
+    }
   }
 
   @override
@@ -354,22 +412,51 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // Buyer info & call
+                      // Buyer info: call + message
                       if (buyer != null) _infoCard(
                         icon: Icons.person_rounded,
-                        title: '${buyer['firstName'] ?? ''} ${buyer['lastName'] ?? ''}'.trim(),
+                        title: '${buyer['firstName'] ?? ''} ${buyer['lastName'] ?? ''}'.trim().isEmpty
+                            ? 'Customer'
+                            : '${buyer['firstName'] ?? ''} ${buyer['lastName'] ?? ''}'.trim(),
                         subtitle: buyer['phone'] ?? '',
-                        trailing: IconButton(
-                          icon: const Icon(Icons.phone_rounded, color: AppTheme.primary),
-                          onPressed: () => _callBuyer(buyer['phone']),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.chat_bubble_rounded,
+                                  color: AppTheme.primary),
+                              tooltip: 'Message',
+                              onPressed: _messagingBuyer
+                                  ? null
+                                  : () => _messageBuyer(buyer, order),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.phone_rounded,
+                                  color: AppTheme.primary),
+                              tooltip: 'Call',
+                              onPressed: () => _callBuyer(buyer['phone']),
+                            ),
+                          ],
                         ),
                       ),
 
-                      // Address
+                      // Delivery place — label + full address so the rider
+                      // knows exactly where they're going
                       if (addr != null) _infoCard(
                         icon: Icons.location_on_rounded,
-                        title: addr['addressLine1'] ?? addr['street'] ?? 'Delivery Address',
-                        subtitle: '${addr['city'] ?? ''} ${addr['region'] ?? ''}'.trim(),
+                        title: [
+                          addr['addressLine1'] ?? addr['street'],
+                          addr['addressLine2'],
+                        ].where((e) => e != null && e.toString().trim().isNotEmpty)
+                            .join(', '),
+                        subtitle: [
+                          if ((addr['label'] ?? '').toString().isNotEmpty)
+                            '${addr['label']} · ',
+                          addr['city'],
+                          addr['region'],
+                          addr['country'],
+                        ].where((e) => e != null && e.toString().trim().isNotEmpty)
+                            .join(' ').replaceAll(' · ', ' · '),
                       ),
 
                       // Items
