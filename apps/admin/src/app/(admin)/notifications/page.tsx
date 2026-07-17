@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { Bell, FileText, Activity, Save, Send, X, CheckCircle, XCircle, Users, Megaphone, Radio, User, Globe, ShoppingBag, Bike, Store, BatteryMedium } from 'lucide-react';
+import { MediaUpload } from '@/components/MediaUpload';
 
 const EVENT_TYPES = [
   'ORDER_PLACED', 'ORDER_CONFIRMED', 'ORDER_CANCELLED', 'ORDER_SHIPPED',
@@ -425,10 +426,12 @@ export default function NotificationsPage() {
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Notification Image URL (optional)</label>
-              <input value={sendImage} onChange={(e) => setSendImage(e.target.value)}
-                placeholder="https://cdn.totalstore.ug/banner.jpg"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              <label className="block text-xs font-medium text-slate-600 mb-1">Notification Image (optional)</label>
+              <MediaUpload value={sendImage} onChange={setSendImage} accept="image/*" compact />
+              {sendImage && (
+                <button type="button" onClick={() => setSendImage('')}
+                  className="text-xs text-rose-500 hover:text-rose-600 mt-1">Remove image</button>
+              )}
               <p className="text-xs text-slate-400 mt-1">Shown as a large banner image in the notification (Android &amp; iOS)</p>
             </div>
 
