@@ -116,8 +116,8 @@ export default function LiveMapClient({ orderId, sellerId, adminToken, height = 
             } else {
               const icon = L.divIcon({
                 className: '',
-                html: `<div style="background:#7c3aed;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">R</div>`,
-                iconSize: [32, 32], iconAnchor: [16, 16],
+                html: `<div style="background:#7c3aed;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg></div>`,
+                iconSize: [34, 34], iconAnchor: [17, 17],
               });
               const marker = L.marker(latlng, { icon })
                 .addTo(map)

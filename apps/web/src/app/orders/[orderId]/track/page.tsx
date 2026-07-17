@@ -87,7 +87,7 @@ export default function OrderTrackingPage({ params }: TrackingPageProps) {
         } else {
           const icon = L.divIcon({
             className: '',
-            html: `<div style="background:#0ea5e9;color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏍</div>`,
+            html: `<div style="background:#0ea5e9;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg></div>`,
             iconSize: [36, 36],
             iconAnchor: [18, 18],
           });
