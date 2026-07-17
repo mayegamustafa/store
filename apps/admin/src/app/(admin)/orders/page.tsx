@@ -92,7 +92,8 @@ export default function OrdersPage() {
           <div className="p-8 text-center text-slate-400">Loading orders...</div>
         ) : (
           <>
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[880px]">
               <thead>
                 <tr>
                   {['Order #', 'Buyer', 'Items', 'Total', 'Payment', 'Pay Status', 'Status', 'Date', 'Actions'].map((h) => (
@@ -160,6 +161,7 @@ export default function OrdersPage() {
                 )}
               </tbody>
             </table>
+            </div>
             {/* Pagination */}
             {data?.totalPages > 1 && (
               <div className="flex justify-center gap-2 p-4 border-t">

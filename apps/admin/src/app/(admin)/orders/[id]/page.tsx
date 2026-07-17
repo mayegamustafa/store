@@ -134,7 +134,7 @@ export default function OrderDetailPage() {
             onClick={async () => {
               try {
                 const res = await adminApi.downloadReceipt(id);
-                const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                const url = window.URL.createObjectURL(new Blob([res as any], { type: 'application/pdf' }));
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `receipt-${order.orderNumber || id}.pdf`;
@@ -150,7 +150,7 @@ export default function OrderDetailPage() {
             onClick={async () => {
               try {
                 const res = await adminApi.downloadReceipt(id);
-                const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                const url = window.URL.createObjectURL(new Blob([res as any], { type: 'application/pdf' }));
                 const w = window.open(url);
                 if (w) { w.onload = () => { w.print(); }; }
               } catch { toast.error('Failed to print receipt'); }
