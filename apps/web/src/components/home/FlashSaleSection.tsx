@@ -70,7 +70,7 @@ export function FlashSaleSection() {
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-white fill-white" strokeWidth={0} />
             <span className="font-heading font-black text-white text-lg tracking-tight">
-              {(sale.title || 'Flash Sale').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim()}
+              {(sale.title || 'Flash Sale').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2190-\u2BFF\uFE0F]/g, '').trim()}
             </span>
           </div>
           <div className="flex items-center gap-2">
