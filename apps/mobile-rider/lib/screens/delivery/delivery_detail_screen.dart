@@ -267,7 +267,7 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen>
                         children: [
                           TileLayer(
                             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.saktech.mobile_rider',
+                            userAgentPackageName: 'com.totalstoreug.mobile_rider',
                           ),
                           if (_routePoints.isNotEmpty)
                             PolylineLayer(polylines: [

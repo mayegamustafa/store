@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../core/api_service.dart';
 import '../core/services/notification_service.dart';
+import '../core/services/biometric_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final _api = ApiService();
   Map<String, dynamic>? _user;
   bool _initialized = false;
+  bool _biometricEnabled = false;
+
+  bool get biometricEnabled => _biometricEnabled;
 
   Map<String, dynamic>? get user => _user;
   bool get isAuthenticated => _user != null;
@@ -18,6 +22,10 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> init() async {
     if (_initialized) return;
+    try {
+      _biometricEnabled = await BiometricService.isEnabled() &&
+          await BiometricService.isEnrolled();
+    } catch (_) {}
     try {
       if (_api.isAuthenticated) {
         final res =
@@ -54,6 +62,7 @@ class AuthProvider extends ChangeNotifier {
           data['accessToken'] as String, data['refreshToken'] as String);
       _user = data['user'] as Map<String, dynamic>;
       NotificationService().registerTokenAfterLogin();
+      _enableBiometricsIfAvailable();
       notifyListeners();
       return null;
     } on DioException catch (e) {
@@ -135,6 +144,7 @@ class AuthProvider extends ChangeNotifier {
           data['accessToken'] as String, data['refreshToken'] as String);
       _user = data['user'] as Map<String, dynamic>;
       NotificationService().registerTokenAfterLogin();
+      _enableBiometricsIfAvailable();
       notifyListeners();
       return null;
     } catch (e) {
@@ -155,9 +165,42 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  void _enableBiometricsIfAvailable() {
+    BiometricService.isAvailable().then((ok) async {
+      if (ok) {
+        await BiometricService.setEnabled(true);
+        _biometricEnabled = true;
+        notifyListeners();
+      }
+    }).catchError((_) {});
+  }
+
+  /// Fingerprint / face sign-in: verify identity, then restore the session
+  /// from the stored tokens (the api client refreshes them as needed).
+  Future<String?> biometricLogin() async {
+    final ok = await BiometricService.authenticate(
+        reason: 'Verify your identity to open your store');
+    if (!ok) return 'Biometric check failed';
+    try {
+      final res = await _api.dio.get('/auth/me');
+      final data = _api.extractData(res);
+      if (data is Map<String, dynamic> &&
+          (data['role'] == 'SELLER' || data['role'] == 'ADMIN')) {
+        _user = data;
+        NotificationService().registerTokenAfterLogin();
+        notifyListeners();
+        return null;
+      }
+      return 'Session expired — sign in with your password';
+    } catch (_) {
+      return 'Session expired — sign in with your password';
+    }
+  }
+
   Future<void> logout() async {
     _user = null;
     await _api.clearTokens();
+    _biometricEnabled = false;
     notifyListeners();
   }
 }

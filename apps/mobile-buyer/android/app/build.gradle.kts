@@ -24,7 +24,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "com.saktech.total_store_buyer"
+    namespace = "com.totalstoreug.total_store_buyer"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -39,7 +39,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.saktech.total_store_buyer"
+        applicationId = "com.totalstoreug.total_store_buyer"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode

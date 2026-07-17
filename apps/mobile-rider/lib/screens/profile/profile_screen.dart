@@ -6,8 +6,23 @@ import '../../providers/auth_provider.dart';
 import '../../providers/delivery_provider.dart';
 import '../../services/biometric_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // The approval badge reads the cached profile — refresh it every time
+    // the screen opens so an admin approval shows without re-logging in.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthProvider>().refreshProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

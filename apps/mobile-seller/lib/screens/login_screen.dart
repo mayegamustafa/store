@@ -45,6 +45,18 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _biometricSignIn() async {
+    setState(() => _loading = true);
+    final err = await context.read<AuthProvider>().biometricLogin();
+    if (!mounted) return;
+    setState(() => _loading = false);
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      context.go('/dashboard');
+    }
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -191,6 +203,28 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
+                  ),
+                  Consumer<AuthProvider>(
+                    builder: (context, authWatch, _) {
+                      if (!authWatch.biometricEnabled) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: SizedBox(
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            onPressed: _loading ? null : _biometricSignIn,
+                            icon: const Icon(Icons.fingerprint_rounded, size: 26),
+                            label: const Text('Sign in with Biometrics'),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
                   Row(

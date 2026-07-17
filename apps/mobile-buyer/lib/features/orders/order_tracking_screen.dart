@@ -282,7 +282,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   children: [
                     TileLayer(
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.saktech.total_store_buyer',
+                      userAgentPackageName: 'com.totalstoreug.total_store_buyer',
                     ),
                     if (_routePoints.isNotEmpty)
                       PolylineLayer(polylines: [
