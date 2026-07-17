@@ -236,12 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 52,
                 child: OutlinedButton.icon(
                   onPressed: auth.isLoading ? null : _loginWithGoogle,
-                  icon: Image.network(
-                    'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
-                    height: 22,
-                    width: 22,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 28),
-                  ),
+                  icon: Image.asset('assets/icons/google_g.png', height: 20, width: 20),
                   label: const Text('Continue with Google', style: TextStyle(fontSize: 15)),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: AppTheme.dividerColor),

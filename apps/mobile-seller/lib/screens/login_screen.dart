@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 52,
                     child: OutlinedButton.icon(
                       onPressed: _loading ? null : _googleSignIn,
-                      icon: const Icon(Icons.g_mobiledata_rounded, size: 30),
+                      icon: Image.asset('assets/icons/google_g.png', height: 20, width: 20),
                       label: const Text('Continue with Google'),
                       style: OutlinedButton.styleFrom(
                         shape: RoundedRectangleBorder(

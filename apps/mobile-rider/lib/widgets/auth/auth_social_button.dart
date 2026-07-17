@@ -54,9 +54,7 @@ class GoogleLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _GoogleLogoPainter(),
-    );
+    return Image.asset('assets/icons/google_g.png', width: 20, height: 20);
   }
 }
 
