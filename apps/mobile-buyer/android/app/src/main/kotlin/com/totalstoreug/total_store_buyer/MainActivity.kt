@@ -1,4 +1,4 @@
-package com.saktech.total_store_buyer
+package com.totalstoreug.total_store_buyer
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
