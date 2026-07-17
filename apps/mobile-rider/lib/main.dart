@@ -11,6 +11,7 @@ import 'providers/chat_provider.dart';
 import 'providers/delivery_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
+import 'core/i18n/app_i18n.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +32,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()..load()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         // ProxyProvider wires AuthProvider → DeliveryProvider so that whenever the
         // authenticated user changes, the riderProfile.id is forwarded to the

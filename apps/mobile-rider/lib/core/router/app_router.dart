@@ -13,6 +13,7 @@ import '../../screens/delivery/delivery_detail_screen.dart';
 import '../../screens/earnings/earnings_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/chat/chat_list_screen.dart';
+import '../i18n/app_i18n.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider auth) => GoRouter(
@@ -89,6 +90,7 @@ class _ShellState extends State<_Shell> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleProvider>(); // rebuild labels on language change
     final hideNav = widget.location.startsWith('/deliveries/');
     // NOT extendBody: content must never render under the floating nav —
     // it was hiding buttons and list items at the bottom of every tab.
@@ -130,21 +132,21 @@ class _ShellState extends State<_Shell> {
                     _NavItem(
                       icon: Icons.local_shipping_outlined,
                       activeIcon: Icons.local_shipping_rounded,
-                      label: 'Deliveries',
+                      label: T.t('deliveries'),
                       active: idx == 0,
                       onTap: () => context.go(_tabs[0]),
                     ),
                     _NavItem(
                       icon: Icons.account_balance_wallet_outlined,
                       activeIcon: Icons.account_balance_wallet_rounded,
-                      label: 'Earnings',
+                      label: T.t('earnings'),
                       active: idx == 1,
                       onTap: () => context.go(_tabs[1]),
                     ),
                     _NavItem(
                       icon: Icons.chat_bubble_outline_rounded,
                       activeIcon: Icons.chat_bubble_rounded,
-                      label: 'Messages',
+                      label: T.t('messages'),
                       active: idx == 2,
                       badge: unread > 0 ? unread : null,
                       onTap: () => context.go(_tabs[2]),
@@ -152,7 +154,7 @@ class _ShellState extends State<_Shell> {
                     _NavItem(
                       icon: Icons.person_outline_rounded,
                       activeIcon: Icons.person_rounded,
-                      label: 'Profile',
+                      label: T.t('profile'),
                       active: idx == 3,
                       onTap: () => context.go(_tabs[3]),
                     ),

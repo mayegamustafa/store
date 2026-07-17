@@ -9,6 +9,7 @@ import '../cart/cart_screen.dart';
 import '../orders/orders_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../core/widgets/offline_banner.dart';
+import '../../core/i18n/app_i18n.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -40,6 +41,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleProvider>(); // rebuild nav labels on language change
     return Scaffold(
       body: OfflineBanner(
         child: IndexedStack(
@@ -62,11 +64,11 @@ class _MainScreenState extends State<MainScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _navItem(0, Icons.home_rounded, Icons.home_outlined, 'Home'),
-                    _navItem(1, Icons.grid_view_rounded, Icons.grid_view_outlined, 'Categories'),
+                    _navItem(0, Icons.home_rounded, Icons.home_outlined, T.t('home')),
+                    _navItem(1, Icons.grid_view_rounded, Icons.grid_view_outlined, T.t('categories')),
                     _cartNavItem(2, cartProvider.itemCount),
-                    _navItem(3, Icons.receipt_long_rounded, Icons.receipt_long_outlined, 'Orders'),
-                    _navItem(4, Icons.person_rounded, Icons.person_outline_rounded, 'Profile'),
+                    _navItem(3, Icons.receipt_long_rounded, Icons.receipt_long_outlined, T.t('orders')),
+                    _navItem(4, Icons.person_rounded, Icons.person_outline_rounded, T.t('profile')),
                   ],
                 ),
               ),

@@ -25,6 +25,7 @@ import 'features/orders/order_tracking_screen.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/wishlist/wishlist_screen.dart';
 import 'features/settings/addresses_screen.dart';
+import 'core/i18n/app_i18n.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,7 @@ class TotalStoreApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()..load()),
         ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..fetchPublicSettings()),
         ChangeNotifierProvider(create: (_) => ProductsProvider()),

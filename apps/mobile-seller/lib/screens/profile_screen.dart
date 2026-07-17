@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../core/i18n/app_i18n.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -92,6 +93,14 @@ class ProfileScreen extends StatelessWidget {
           Card(
             child: Column(
               children: [
+                ListTile(
+                  leading: const Icon(Icons.translate_rounded),
+                  title: Text(T.t('language')),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => showLanguagePicker(
+                      context, context.read<LocaleProvider>()),
+                ),
+                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.help_outline_rounded),
                   title: const Text('Help & Support'),

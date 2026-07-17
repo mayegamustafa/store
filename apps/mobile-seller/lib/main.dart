@@ -11,6 +11,7 @@ import 'providers/products_provider.dart';
 import 'providers/orders_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/wallet_provider.dart';
+import 'core/i18n/app_i18n.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()..load()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProductsProvider()),
         ChangeNotifierProvider(create: (_) => OrdersProvider()),

@@ -20,6 +20,7 @@ import '../wallet/wallet_screen.dart';
 import '../support/help_center_screen.dart';
 import '../support/live_chat_screen.dart';
 import '../support/about_screen.dart';
+import '../../core/i18n/app_i18n.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -177,6 +178,8 @@ class ProfileScreen extends StatelessWidget {
         // Currency
         _buildMenuSection('Preferences', [
           _MenuItem(Icons.currency_exchange_rounded, 'Currency', () => _showCurrencyPicker(context)),
+          _MenuItem(Icons.translate_rounded, T.t('language'),
+              () => showLanguagePicker(context, context.read<LocaleProvider>())),
         ]),
 
         const SizedBox(height: 12),

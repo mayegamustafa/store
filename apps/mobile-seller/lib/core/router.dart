@@ -16,6 +16,7 @@ import '../screens/subscription_screen.dart';
 import '../screens/subscription_renew_prompt.dart';
 import 'api_service.dart';
 import '../core/money.dart';
+import 'i18n/app_i18n.dart';
 
 class AppRouter {
   static final _shellKey = GlobalKey<NavigatorState>();
@@ -127,6 +128,7 @@ class _ShellState extends State<_Shell> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleProvider>(); // rebuild labels on language change
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: NavigationBar(
@@ -135,27 +137,27 @@ class _ShellState extends State<_Shell> {
           setState(() => _idx = i);
           context.go(_tabs[i]);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard_rounded),
-              label: 'Dashboard'),
+              icon: const Icon(Icons.dashboard_outlined),
+              selectedIcon: const Icon(Icons.dashboard_rounded),
+              label: T.t('dashboard')),
           NavigationDestination(
-              icon: Icon(Icons.inventory_2_outlined),
-              selectedIcon: Icon(Icons.inventory_2_rounded),
-              label: 'Products'),
+              icon: const Icon(Icons.inventory_2_outlined),
+              selectedIcon: const Icon(Icons.inventory_2_rounded),
+              label: T.t('products')),
           NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long_rounded),
-              label: 'Orders'),
+              icon: const Icon(Icons.receipt_long_outlined),
+              selectedIcon: const Icon(Icons.receipt_long_rounded),
+              label: T.t('orders')),
           NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-              label: 'Wallet'),
+              icon: const Icon(Icons.account_balance_wallet_outlined),
+              selectedIcon: const Icon(Icons.account_balance_wallet_rounded),
+              label: T.t('wallet')),
           NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'Profile'),
+              icon: const Icon(Icons.person_outline_rounded),
+              selectedIcon: const Icon(Icons.person_rounded),
+              label: T.t('profile')),
         ],
       ),
     );

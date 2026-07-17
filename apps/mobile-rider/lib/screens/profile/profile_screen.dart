@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/delivery_provider.dart';
 import '../../services/biometric_service.dart';
+import '../../core/i18n/app_i18n.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -326,6 +327,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
+
+                  // ── Language ─────────────────────────────────────────────
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.translate_rounded,
+                          color: AppTheme.primary),
+                      title: Text(T.t('language')),
+                      trailing:
+                          const Icon(Icons.chevron_right_rounded, size: 20),
+                      onTap: () => showLanguagePicker(
+                          context, context.read<LocaleProvider>()),
+                    ),
+                  ),
 
                   // ── Sign Out ─────────────────────────────────────────────
                   GestureDetector(
