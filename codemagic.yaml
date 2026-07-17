@@ -7,9 +7,24 @@ definitions:
   env: &flutter_env
     flutter: stable
     java: 17
+    android_signing:
+      - totalstore_keystore
   scripts: &build_scripts
     - name: Flutter pub get
       script: flutter pub get
+    - name: Set up release signing (uses the uploaded keystore when present)
+      script: |
+        if [ -n "${CM_KEYSTORE_PATH:-}" ]; then
+          cat > android/key.properties <<EOF
+        storeFile=$CM_KEYSTORE_PATH
+        storePassword=$CM_KEYSTORE_PASSWORD
+        keyAlias=$CM_KEY_ALIAS
+        keyPassword=$CM_KEY_PASSWORD
+        EOF
+          echo "Release signing configured"
+        else
+          echo "No keystore uploaded — building debug-signed (in-place updates will NOT work)"
+        fi
     - name: Build release APK
       script: flutter build apk --release
 

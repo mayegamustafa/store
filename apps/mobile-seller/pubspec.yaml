@@ -37,10 +37,10 @@ dev_dependencies:
   flutter_native_splash: ^2.4.7
 
 flutter_native_splash:
-  color: "#7c3aed"
+  color: "#FFFFFF"
   image: assets/images/app_logo.png
   android_12:
-    color: "#7c3aed"
+    color: "#FFFFFF"
     image: assets/images/app_logo.png
 
 flutter:
@@ -64,6 +64,6 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/icon.png"
-  adaptive_icon_background: "#10B981"
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon.png"
   min_sdk_android: 21

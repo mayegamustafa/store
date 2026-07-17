@@ -8,7 +8,10 @@ import 'package:url_launcher/url_launcher.dart';
 /// Checks /apps/version.json on the web server and prompts the user
 /// if a newer version is available.
 class UpdateService {
-  static const String _versionUrl = 'https://totalstoreug.com/apps/version.json';
+  // Admin-controlled: Settings → app versions / download URLs feed
+  // /config/public. The old /apps/version.json static file 404'd, so
+  // update prompts never appeared.
+  static const String _versionUrl = 'https://totalstoreug.com/api/v1/config/public';
   static const String _appKey = 'seller';
 
   static Future<void> checkForUpdate(BuildContext context) async {
@@ -23,11 +26,14 @@ class UpdateService {
       if (response.statusCode != 200) return;
 
       final data = response.data;
-      final appData = data[_appKey];
+      final apps = data is Map ? (data['apps'] ?? data) : null;
+      final appData = apps is Map ? apps[_appKey] : null;
       if (appData == null) return;
 
       final latestVersion = appData['version'] as String;
-      final downloadUrl = appData['url'] as String;
+      final downloadUrl =
+          (appData['downloadUrl'] ?? appData['url'] ?? '') as String;
+      if (latestVersion.isEmpty || downloadUrl.isEmpty) return;
       final forceUpdate = appData['forceUpdate'] == true;
       final minVersion = appData['minVersion'] as String? ?? '0.0.0';
       final changelog = appData['changelog'] as String? ?? '';
@@ -38,7 +44,9 @@ class UpdateService {
         _showUpdateDialog(
           context,
           latestVersion: latestVersion,
-          downloadUrl: 'https://totalstoreug.com$downloadUrl',
+          downloadUrl: downloadUrl.startsWith('http')
+              ? downloadUrl
+              : 'https://totalstoreug.com$downloadUrl',
           changelog: changelog,
           forceUpdate: mustUpdate,
         );
