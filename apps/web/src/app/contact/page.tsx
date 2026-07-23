@@ -2,8 +2,13 @@
 
 import { useState } from 'react';
 import { Phone, Mail, MapPin, Send, MessageCircle, Clock, CheckCircle } from 'lucide-react';
+import { useSettings } from '@/contexts/settings';
 
 export default function ContactPage() {
+  const settings = useSettings();
+  const sitePhone = settings.SITE_PHONE || '+256 700 000 000';
+  const siteEmail = settings.SITE_EMAIL || 'support@totalstore.ug';
+  const siteAddress = settings.SITE_ADDRESS || 'Kampala, Uganda';
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -45,27 +50,27 @@ export default function ContactPage() {
               {
                 icon: Phone,
                 title: 'Phone / WhatsApp',
-                value: '+256 700 000 000',
+                value: sitePhone,
                 desc: 'Mon–Sat, 8am–8pm',
-                href: 'tel:+256700000000',
+                href: `tel:${sitePhone.replace(/\s/g, '')}`,
                 color: 'text-green-500',
                 bg: 'bg-green-50',
               },
               {
                 icon: Mail,
                 title: 'Email',
-                value: 'support@totalstore.ug',
+                value: siteEmail,
                 desc: 'We reply within 24 hours',
-                href: 'mailto:support@totalstore.ug',
+                href: `mailto:${siteEmail}`,
                 color: 'text-sky-500',
                 bg: 'bg-sky-50',
               },
               {
                 icon: MapPin,
                 title: 'Office',
-                value: 'Kampala, Uganda',
-                desc: 'Plot 123, Nakasero Road',
-                href: 'https://maps.google.com/?q=Kampala+Uganda',
+                value: siteAddress,
+                desc: 'Come say hello',
+                href: `https://maps.google.com/?q=${encodeURIComponent(siteAddress)}`,
                 color: 'text-purple-500',
                 bg: 'bg-purple-50',
               },

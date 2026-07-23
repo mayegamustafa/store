@@ -6,6 +6,7 @@ import { ordersApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { RotateCcw, Package, ChevronDown, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useSettings } from '@/contexts/settings';
 
 const RETURN_REASONS = [
   'Item received is different from what was ordered',
@@ -18,6 +19,9 @@ const RETURN_REASONS = [
 
 export default function ReturnsPage() {
   const { user } = useAuthStore();
+  const settings = useSettings();
+  const siteEmail = settings.SITE_EMAIL || 'support@totalstore.ug';
+  const sitePhone = settings.SITE_PHONE || '+256 700 000 000';
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
@@ -208,12 +212,12 @@ export default function ReturnsPage() {
               <div className="border-t pt-4">
                 <p className="text-slate-500">
                   Need help? Contact us at{' '}
-                  <a href="mailto:support@totalstore.ug" className="text-sky-600 hover:underline">
-                    support@totalstore.ug
+                  <a href={`mailto:${siteEmail}`} className="text-sky-600 hover:underline">
+                    {siteEmail}
                   </a>{' '}
                   or call{' '}
-                  <a href="tel:+256700000000" className="text-sky-600 hover:underline">
-                    +256 700 000 000
+                  <a href={`tel:${sitePhone.replace(/\s/g, '')}`} className="text-sky-600 hover:underline">
+                    {sitePhone}
                   </a>
                 </p>
               </div>

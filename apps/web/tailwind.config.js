@@ -57,11 +57,16 @@ module.exports = {
           '0%':   { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        marquee: {
+          '0%':   { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'fade-up':  'fade-up 0.4s ease-out both',
         'slide-in': 'slide-in 0.3s ease-out both',
         shimmer:    'shimmer 1.6s linear infinite',
+        marquee:    'marquee 40s linear infinite',
       },
     },
   },

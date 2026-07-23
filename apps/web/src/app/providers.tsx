@@ -2,11 +2,12 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '@/i18n';
 import { SettingsProvider, useSettings } from '@/contexts/settings';
 import { AppConfigProvider } from '@/lib/app-config';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { useWishlistStore } from '@/stores/wishlist.store';
 
 /** Inner wrapper that reads Google Client ID from the settings context */
 function DynamicGoogleProvider({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: { queries: { staleTime: 60 * 1000, retry: 1 } },
   }));
+
+  // Load the account wishlist once on mount (merges any guest items too).
+  useEffect(() => {
+    useWishlistStore.getState().syncFromServer();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -11,6 +11,7 @@ import { RecentlyViewed } from '@/components/home/RecentlyViewed';
 import { CategoryDealsSection } from '@/components/home/CategoryDealsSection';
 import { MidBannersDouble, MidBannerSingle } from '@/components/home/MidBanners';
 import { BrandsSection } from '@/components/home/BrandsSection';
+import { PromoMarquee } from '@/components/home/PromoMarquee';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
@@ -72,6 +73,11 @@ export default function HomePage() {
       {/* ── Top Brands ──────────────────────────────────────── */}
       <section className="container-app mt-4">
         <BrandsSection />
+      </section>
+
+      {/* ── Moving promotions strip (non-intrusive) ─────────── */}
+      <section className="container-app mt-4">
+        <PromoMarquee />
       </section>
 
       {/* ── Mid promotional banners (2-col) ─────────────────── */}

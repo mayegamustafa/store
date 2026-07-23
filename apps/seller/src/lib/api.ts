@@ -130,7 +130,7 @@ export const sellerApi = {
   createProduct: (data: any) => api.post('/products', data),
   updateProduct: (id: string, data: any) => api.patch(`/products/${id}`, data),
   deleteProduct: (id: string) => api.delete(`/products/${id}`),
-  generateProductDescription: (data: { name: string; brand?: string; category?: string; tags?: string[] }) =>
+  generateProductDescription: (data: { name: string; brand?: string; category?: string; tags?: string[]; condition?: string }) =>
     api.post('/products/ai-description', data),
   // Orders
   getOrders: (page = 1, status?: string) =>

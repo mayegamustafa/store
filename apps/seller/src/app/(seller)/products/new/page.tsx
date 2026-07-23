@@ -165,6 +165,7 @@ export default function NewProductPage() {
     images: [] as string[],
     thumbnailUrl: '',
     videoUrl: '',
+    adVideoUrl: '',
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -201,6 +202,7 @@ export default function NewProductPage() {
         images: form.images,
         thumbnailUrl: form.thumbnailUrl || undefined,
         videoUrl: form.videoUrl || undefined,
+        adVideoUrl: form.adVideoUrl || undefined,
         categoryId: form.categoryId || undefined,
         isFeatured: false,
       }),
@@ -240,6 +242,7 @@ export default function NewProductPage() {
         brand: form.brand || undefined,
         category: categories.find((c) => c.id === form.categoryId)?.name,
         tags: form.tags,
+        condition: form.condition,
       });
       const generated =
         (res as any)?.description || (res as any)?.data?.description || '';
@@ -319,6 +322,19 @@ export default function NewProductPage() {
                 accept="video/*"
                 previewType="video"
               />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-700 mb-2">
+                Promo Video <span className="text-slate-400 font-normal">(short ad · optional)</span>
+              </p>
+              <SingleFileUpload
+                label="Promo"
+                value={form.adVideoUrl}
+                onChange={(url) => set('adVideoUrl', url)}
+                accept="video/*"
+                previewType="video"
+              />
+              <p className="text-xs text-slate-400 mt-1">A 15–30s clip used in promotions &amp; reels.</p>
             </div>
           </div>
         </div>

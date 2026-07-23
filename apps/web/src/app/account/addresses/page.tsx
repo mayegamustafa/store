@@ -282,8 +282,8 @@ export default function AddressesPage() {
                       </div>
                       <p className="text-sm text-slate-700">{addr.fullName} · {addr.phone}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {addr.addressLine1}{addr.addressLine2 ? `, ${addr.addressLine2}` : ''}, {addr.city}
-                        {addr.district ? `, ${addr.district}` : ''}, {addr.country}
+                        {[addr.addressLine1, addr.addressLine2, addr.city, addr.district, addr.region, addr.country]
+                          .filter(Boolean).join(', ')}
                       </p>
                     </div>
                   </div>

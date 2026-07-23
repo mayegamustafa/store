@@ -128,6 +128,13 @@ export const usersApi = {
   update: (data: any) => api.patch('/users/me', data),
 };
 
+// ── Wishlist (account-synced) ──────────────────────────────────────────────────
+export const wishlistApi = {
+  list: () => api.get('/users/me/wishlist'),
+  add: (productId: string) => api.post('/users/me/wishlist', { productId }),
+  remove: (productId: string) => api.delete(`/users/me/wishlist/${productId}`),
+};
+
 // ── Addresses ─────────────────────────────────────────────────────────────────
 export const addressesApi = {
   list: () => api.get('/users/me/addresses'),

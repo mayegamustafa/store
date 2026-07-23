@@ -36,6 +36,10 @@ export const useAuthStore = create<AuthStore>()(
           localStorage.setItem('refresh_token', refreshToken);
         }
         set({ user, token, isAuthenticated: true });
+        // Merge the guest wishlist into the account and pull the saved one.
+        import('@/stores/wishlist.store')
+          .then((m) => m.useWishlistStore.getState().syncFromServer())
+          .catch(() => {});
       },
 
       logout: () => {
@@ -45,8 +49,13 @@ export const useAuthStore = create<AuthStore>()(
           localStorage.removeItem('refresh_token');
           // Clear the persisted Zustand cart so stale items don't survive across sessions
           localStorage.removeItem('totalstore-cart');
+          localStorage.removeItem('totalstore-wishlist');
         }
         set({ user: null, token: null, isAuthenticated: false });
+        // Token is already gone, so this only resets local state (no server calls).
+        import('@/stores/wishlist.store')
+          .then((m) => m.useWishlistStore.setState({ items: [] }))
+          .catch(() => {});
       },
 
       setUser: (user) => set({ user }),

@@ -453,6 +453,8 @@ model Product {
   currency       String        @default("UGX")
   sku            String?       @unique
   barcode        String?
+  brand          String?       // free-text brand / manufacturer name
+  condition      String?       // NEW | USED | REFURBISHED (null = unspecified)
   stock          Int           @default(0)
   lowStockAlert  Int           @default(5)
   weight         Float?

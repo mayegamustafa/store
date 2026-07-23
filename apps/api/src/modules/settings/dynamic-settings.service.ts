@@ -106,6 +106,55 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'IMPROVMX_API_KEY', group: 'integrations', label: 'ImprovMX API Key', type: 'secret', defaultValue: '', isSecret: true },
   { key: 'IMPROVMX_DOMAIN', group: 'integrations', label: 'ImprovMX Email Domain', type: 'text', defaultValue: 'totalstoreug.com' },
 
+  // ── Contact / Support (PUBLIC — footer, contact/about pages, mobile apps) ──
+  // These were editable in the admin panel but were NOT in this list, so the
+  // saved values were never returned by /settings/public and every client kept
+  // showing the hardcoded fallbacks. Adding them here makes admin edits reach
+  // the website and apps.
+  { key: 'SITE_PHONE', group: 'contact', label: 'Support Phone', type: 'text', defaultValue: '' },
+  { key: 'SITE_EMAIL', group: 'contact', label: 'Support Email', type: 'text', defaultValue: '' },
+  { key: 'SITE_ADDRESS', group: 'contact', label: 'Physical Address', type: 'text', defaultValue: '' },
+
+  // Branding / logos (PUBLIC)
+  { key: 'SITE_LOGO_DARK_URL', group: 'branding', label: 'Dark-mode Logo URL', type: 'url', defaultValue: '' },
+  { key: 'SITE_OG_IMAGE_URL', group: 'branding', label: 'Social Share Image', type: 'url', defaultValue: '' },
+  { key: 'APPLE_ICON_URL', group: 'branding', label: 'Apple Touch Icon', type: 'url', defaultValue: '' },
+
+  // Theme colours + announcement bar (PUBLIC — applied at runtime by the storefront)
+  { key: 'HEADER_BG_COLOR', group: 'branding', label: 'Header / Nav Background', type: 'color', defaultValue: '' },
+  { key: 'FOOTER_BG_COLOR', group: 'branding', label: 'Footer Background', type: 'color', defaultValue: '' },
+  { key: 'BANNER_BG_COLOR', group: 'branding', label: 'Announcement Bar Background', type: 'color', defaultValue: '' },
+  { key: 'BANNER_TEXT', group: 'branding', label: 'Announcement Bar Text', type: 'text', defaultValue: '' },
+
+  // Social (PUBLIC)
+  { key: 'SOCIAL_YOUTUBE', group: 'social', label: 'YouTube URL', type: 'url', defaultValue: '' },
+
+  // Public analytics / app IDs (safe to expose — they ship in every client)
+  { key: 'FACEBOOK_APP_ID', group: 'integrations', label: 'Facebook App ID', type: 'text', defaultValue: '' },
+  { key: 'FACEBOOK_PIXEL_ID', group: 'integrations', label: 'Facebook Pixel ID', type: 'text', defaultValue: '' },
+
+  // Mobile app branding text/colours (PUBLIC)
+  { key: 'BUYER_APP_TAGLINE', group: 'app_branding', label: 'Buyer App Tagline', type: 'text', defaultValue: '' },
+  { key: 'RIDER_APP_TAGLINE', group: 'app_branding', label: 'Rider App Tagline', type: 'text', defaultValue: '' },
+  { key: 'SELLER_APP_TAGLINE', group: 'app_branding', label: 'Seller App Tagline', type: 'text', defaultValue: '' },
+  { key: 'RIDER_APP_SPLASH_COLOR', group: 'app_branding', label: 'Rider App Splash Color', type: 'color', defaultValue: '#0ea5e9' },
+  { key: 'SELLER_APP_SPLASH_COLOR', group: 'app_branding', label: 'Seller App Splash Color', type: 'color', defaultValue: '#0ea5e9' },
+
+  // Commerce toggles surfaced in the admin panel (PUBLIC config)
+  { key: 'MAX_DELIVERY_RADIUS_KM', group: 'commerce', label: 'Max Delivery Radius (km)', type: 'number', defaultValue: '30' },
+  { key: 'COD_ENABLED', group: 'commerce', label: 'Cash on Delivery Enabled', type: 'boolean', defaultValue: 'true' },
+  { key: 'REVIEWS_ENABLED', group: 'commerce', label: 'Product Reviews Enabled', type: 'boolean', defaultValue: 'true' },
+  { key: 'REVIEW_REQUIRES_PURCHASE', group: 'commerce', label: 'Reviews Require Purchase', type: 'boolean', defaultValue: 'false' },
+  { key: 'MAX_CART_ITEMS', group: 'commerce', label: 'Max Items per Cart', type: 'number', defaultValue: '50' },
+
+  // CMS page content (PUBLIC — rendered on About / Careers pages)
+  { key: 'PAGE_ABOUT_MISSION', group: 'pages', label: 'About — Mission Statement', type: 'text', defaultValue: '' },
+  { key: 'PAGE_ABOUT_STORY', group: 'pages', label: 'About — Our Story', type: 'text', defaultValue: '' },
+  { key: 'PAGE_ABOUT_TEAM_JSON', group: 'pages', label: 'About — Team Members (JSON)', type: 'json', defaultValue: '' },
+  { key: 'PAGE_CAREERS_POSITIONS_JSON', group: 'pages', label: 'Careers — Positions (JSON)', type: 'json', defaultValue: '' },
+  { key: 'PAGE_CAREERS_BENEFITS_JSON', group: 'pages', label: 'Careers — Benefits (JSON)', type: 'json', defaultValue: '' },
+  { key: 'PAGE_CAREERS_EMAIL', group: 'pages', label: 'Careers — Application Email', type: 'text', defaultValue: '' },
+
   // Dynamic API Configuration
   { key: 'API_BASE_URL', group: 'api_config', label: 'Primary API Base URL', type: 'url', defaultValue: 'https://totalstoreug.com/api/v1' },
   { key: 'API_BACKUP_URL', group: 'api_config', label: 'Backup API Base URL', type: 'url', defaultValue: '' },

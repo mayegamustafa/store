@@ -51,6 +51,7 @@ export default function ProductPageView() {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'specs'>('description');
+  const [galleryPaused, setGalleryPaused] = useState(false);
 
   // Redirect if slug is missing or is the literal string "undefined"
   useEffect(() => {
@@ -63,6 +64,15 @@ export default function ProductPageView() {
     enabled: !!slug && slug !== 'undefined',
     retry: false,
   });
+
+  // Auto-advance the image gallery like a slideshow. Pauses while the shopper
+  // hovers (or focuses) the gallery so manual browsing is never interrupted.
+  useEffect(() => {
+    const count = (product as any)?.images?.length ?? 0;
+    if (galleryPaused || count < 2) return;
+    const t = setInterval(() => setSelectedImage((i) => (i + 1) % count), 4000);
+    return () => clearInterval(t);
+  }, [product, galleryPaused]);
 
   const { data: reviews } = useQuery({
     queryKey: ['reviews', (product as any)?.id],
@@ -192,11 +202,36 @@ export default function ProductPageView() {
 
             {/* Image Gallery */}
             <div className="p-6 lg:border-r">
-              <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 mb-4">
-                <Image src={images[selectedImage]} alt={p.name} fill className="object-contain" />
+              <div
+                className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 mb-4 group"
+                onMouseEnter={() => setGalleryPaused(true)}
+                onMouseLeave={() => setGalleryPaused(false)}
+              >
+                {images.map((img: string, i: number) => (
+                  <Image
+                    key={i}
+                    src={img}
+                    alt={p.name}
+                    fill
+                    className={`object-contain transition-opacity duration-700 ${i === selectedImage ? 'opacity-100' : 'opacity-0'}`}
+                    priority={i === 0}
+                  />
+                ))}
                 {discountPercent > 0 && (
-                  <div className="absolute top-3 left-3 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded-md">
+                  <div className="absolute top-3 left-3 z-10 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded-md">
                     -{discountPercent}%
+                  </div>
+                )}
+                {images.length > 1 && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+                    {images.map((_: string, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedImage(i)}
+                        aria-label={`View image ${i + 1}`}
+                        className={`h-1.5 rounded-full transition-all ${i === selectedImage ? 'w-5 bg-sky-500' : 'w-1.5 bg-white/70 hover:bg-white'}`}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -238,6 +273,17 @@ export default function ProductPageView() {
               </div>
 
               <h1 className="text-2xl font-bold text-slate-900 mb-3 leading-tight">{p.name}</h1>
+
+              {/* Condition badge — flag pre-owned / refurbished items clearly */}
+              {p.condition && p.condition !== 'NEW' && (
+                <span className={`inline-flex items-center gap-1 mb-3 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  p.condition === 'REFURBISHED'
+                    ? 'bg-violet-50 text-violet-700 border border-violet-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  {p.condition === 'REFURBISHED' ? 'Refurbished' : 'Used'}
+                </span>
+              )}
 
               {/* Product star rating */}
               <div className="flex items-center gap-3 mb-1">
@@ -407,6 +453,9 @@ export default function ProductPageView() {
               {activeTab === 'specs' && (
                 <div className="text-sm text-slate-700 space-y-2">
                   <p>Brand: <strong>{p.brand || 'N/A'}</strong></p>
+                  {p.condition && (
+                    <p>Condition: <strong>{p.condition.charAt(0) + p.condition.slice(1).toLowerCase()}</strong></p>
+                  )}
                   <p>SKU: <strong>{p.sku || 'N/A'}</strong></p>
                   <p>Stock: <strong>{p.stock || 0} units</strong></p>
                   {storeCategory && storeCategory !== 'GENERAL' && (

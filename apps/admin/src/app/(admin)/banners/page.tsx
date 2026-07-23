@@ -15,7 +15,21 @@ const PLACEMENTS = [
   { value: 'home_bottom',  label: 'Home — Bottom Banners' },
   { value: 'category_top', label: 'Category page — Top' },
   { value: 'flash_sale',   label: 'Flash Sale page' },
+  { value: 'promo_strip',  label: 'Home — Moving Promo Strip' },
 ];
+
+// Recommended artwork size per placement — shown to admins/designers so
+// uploaded images fit each slot without cropping or blurring.
+const PLACEMENT_SPECS: Record<string, string> = {
+  home_hero:    '1920 × 720 px  ·  landscape ~8:3',
+  home_middle:  '800 × 450 px  ·  16:9 (2 per row)',
+  home_single:  '1920 × 480 px  ·  wide ~4:1',
+  home_bottom:  '800 × 300 px  ·  ~8:3 (2–3 per row)',
+  category_top: '1600 × 400 px  ·  ~4:1',
+  flash_sale:   '1200 × 400 px  ·  3:1',
+  promo_strip:  '96 × 96 px  ·  square icon/thumbnail',
+};
+const bannerSpec = (placement: string) => PLACEMENT_SPECS[placement] ?? '1600 × 600 px';
 
 const BG_PRESETS = [
   { label: 'Dark zinc',   value: 'bg-zinc-900' },
@@ -105,6 +119,11 @@ export default function BannersPage() {
                 <select value={form.placement} onChange={e => set('placement', e.target.value)} className="field-input">
                   {PLACEMENTS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
+                <p className="text-xs text-slate-500 mt-1.5">
+                  📐 Recommended image size:{' '}
+                  <span className="font-semibold text-slate-700">{bannerSpec(form.placement)}</span>
+                  {' '}· JPG/PNG/WebP, keep under ~500&nbsp;KB.
+                </p>
               </div>
               <div>
                 <label className="field-label">Badge text (above title)</label>
@@ -159,7 +178,7 @@ export default function BannersPage() {
                 <input type="number" value={form.sortOrder} onChange={e => set('sortOrder', Number(e.target.value))} className="field-input" />
               </div>
               <div className="sm:col-span-2">
-                <MediaUpload label="Background Image (optional — overlays colour)" value={form.image} onChange={url => set('image', url)} accept="image/*" />
+                <MediaUpload label={`Background Image — recommended ${bannerSpec(form.placement)} (optional, overlays colour)`} value={form.image} onChange={url => set('image', url)} accept="image/*" />
               </div>
               <div className="sm:col-span-2">
                 <label className="flex items-center gap-2 text-sm cursor-pointer select-none">

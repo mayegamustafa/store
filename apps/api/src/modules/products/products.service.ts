@@ -207,6 +207,8 @@ export class ProductsService {
     if (Array.isArray(dto.tags)) out.tags = dto.tags.map(String);
     if (dto.sku !== undefined) out.sku = dto.sku || null;
     if (dto.barcode !== undefined) out.barcode = dto.barcode || null;
+    if (dto.brand !== undefined) out.brand = dto.brand || null;
+    if (dto.condition !== undefined) out.condition = dto.condition || null;
     if (dto.weight !== undefined) out.weight = num(dto.weight) ?? null;
     if (dto.dimensions !== undefined) out.dimensions = dto.dimensions || null;
     if (dto.discountType !== undefined) out.discountType = dto.discountType || null;
@@ -356,7 +358,7 @@ export class ProductsService {
 
   // ── Admin: create product for any seller ─────────────────────────────────────
   async adminCreate(dto: any) {
-    const { sellerId, variants, brand, condition, categoryId, ...rest } = dto;
+    const { sellerId, variants, categoryId, ...rest } = dto;
     if (!sellerId) throw new BadRequestException('sellerId is required');
 
     const seller = await this.prisma.sellerProfile.findUnique({ where: { id: sellerId } });
@@ -365,7 +367,7 @@ export class ProductsService {
     // Only pass known Product scalar fields to Prisma
     const allowed = [
       'name','description','basePrice','comparePrice','cost',
-      'discountType','discountValue','currency','sku','barcode','stock',
+      'discountType','discountValue','currency','sku','barcode','brand','condition','stock',
       'lowStockAlert','weight','dimensions','images','thumbnailUrl','videoUrl',
       'adVideoUrl','tags','isFeatured','isSponsored','metaTitle','metaDesc','deliveryFee',
     ];
@@ -400,10 +402,10 @@ export class ProductsService {
     if (!product) throw new NotFoundException('Product not found');
 
     // Strip unknown fields — only pass valid Product scalars to Prisma
-    const { variants, brand, condition, sellerId, categoryId, ...rest } = dto;
+    const { variants, sellerId, categoryId, ...rest } = dto;
     const allowed = [
       'name','description','basePrice','comparePrice','cost',
-      'discountType','discountValue','currency','sku','barcode','stock',
+      'discountType','discountValue','currency','sku','barcode','brand','condition','stock',
       'lowStockAlert','weight','dimensions','images','thumbnailUrl','videoUrl',
       'adVideoUrl','tags','isFeatured','isSponsored','metaTitle','metaDesc','status','deliveryFee',
     ];
