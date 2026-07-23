@@ -5,6 +5,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api/api_service.dart';
 import '../core/offline_cache.dart';
+import '../services/notification_service.dart';
 
 class DeliveryProvider extends ChangeNotifier with WidgetsBindingObserver {
   final _api = ApiService();
@@ -57,6 +58,22 @@ class DeliveryProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (id != null) restoreOnlineState();
   }
 
+  /// Best-effort: request location permission up front so tracking works
+  /// without the rider having to enable it manually. Android still shows the
+  /// system consent dialog the first time — no app can bypass that.
+  Future<void> ensureLocationPermission() async {
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      // A second request nudges Android toward "Allow all the time" (background).
+      if (perm == LocationPermission.whileInUse) {
+        await Geolocator.requestPermission();
+      }
+    } catch (_) {}
+  }
+
   /// Bring the rider back online on launch. Defaults to online unless the rider
   /// previously chose to go offline (persisted across restarts).
   Future<void> restoreOnlineState() async {
@@ -64,6 +81,7 @@ class DeliveryProvider extends ChangeNotifier with WidgetsBindingObserver {
     final saved = await _storage.read(key: 'riderOnline');
     final shouldBeOnline = saved == null ? true : saved == 'true';
     if (!shouldBeOnline) return;
+    await ensureLocationPermission();
     _isOnline = true;
     await _api.toggleOnline(true);
     await _connectSocket();
@@ -156,6 +174,21 @@ class DeliveryProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (_riderId != null) _socket!.emit('rider:online', {'riderId': _riderId});
     });
     _socket!.onDisconnect((_) => debugPrint('Rider socket disconnected — will auto-reconnect'));
+    // New assignment arrives in real time → reload + sound the alarm instantly.
+    _socket!.on('delivery:new', _onDeliveryAssigned);
+    _socket!.on('delivery:assigned', _onDeliveryAssigned);
+  }
+
+  void _onDeliveryAssigned(dynamic data) {
+    loadDeliveries();
+    try {
+      final map = data is Map ? Map<String, dynamic>.from(data) : const {};
+      NotificationService.showAssignmentAlarm(
+        title: (map['title'] ?? 'New delivery assigned 🚨').toString(),
+        body: (map['body'] ?? 'Open the app to accept.').toString(),
+        route: map['route']?.toString(),
+      );
+    } catch (_) {}
   }
 
   /// Open the position stream and broadcast on movement. The OS-level

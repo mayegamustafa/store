@@ -255,6 +255,53 @@ export class NotificationsService implements OnModuleInit {
     }
   }
 
+  /**
+   * Rider new-delivery ALARM push.
+   * Sent DATA-ONLY on Android (no top-level `notification`) so the rider app
+   * renders it itself as a full-screen, insistent (looping-sound) alarm even
+   * when the app is backgrounded or terminated. iOS still gets a visible alert
+   * via the apns payload.
+   */
+  async sendRiderAssignmentPush(
+    fcmToken: string,
+    opts: { title: string; body: string; route?: string; orderId?: string; orderNumber?: string },
+  ) {
+    if (!this.firebaseApp || !fcmToken) return;
+    try {
+      await admin.messaging().send({
+        token: fcmToken,
+        data: {
+          type: 'RIDER_ASSIGNED',
+          event: 'RIDER_ASSIGNED',
+          title: opts.title,
+          body: opts.body,
+          route: opts.route ?? '',
+          order_id: opts.orderId ?? '',
+          order_number: opts.orderNumber ?? '',
+        },
+        android: {
+          priority: 'high',
+          ttl: 60_000, // a stale assignment alarm is useless — expire after 60s
+        },
+        apns: {
+          headers: { 'apns-priority': '10', 'apns-push-type': 'alert' },
+          payload: {
+            aps: {
+              alert: { title: opts.title, body: opts.body },
+              sound: 'default',
+              badge: 1,
+              'interruption-level': 'time-sensitive',
+              'content-available': 1,
+            },
+          },
+        },
+      });
+      this.logger.log(`🚨 Rider assignment alarm → ${fcmToken.substring(0, 10)}...`);
+    } catch (error) {
+      this.logger.error('Rider assignment push failed', error.message);
+    }
+  }
+
   async sendTopicNotification(topic: string, title: string, body: string, data?: Record<string, string>, imageUrl?: string) {
     if (!this.firebaseApp) return;
     try {

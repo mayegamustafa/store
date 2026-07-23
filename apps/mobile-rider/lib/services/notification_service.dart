@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,53 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../core/navigation/navigator_key.dart';
+
+// ── New-delivery ALARM (shared by the class + the background isolate) ──────────
+// A dedicated, max-importance channel using the ALARM audio stream so it cuts
+// through even when the phone is on vibrate/quiet.
+const AndroidNotificationChannel kRiderAlarmChannel = AndroidNotificationChannel(
+  'rider_alarm',
+  'New Delivery Alarm',
+  description: 'Loud, full-screen alert when a new delivery is assigned.',
+  importance: Importance.max,
+  playSound: true,
+  enableVibration: true,
+  audioAttributesUsage: AudioAttributesUsage.alarm,
+);
+
+// FLAG_INSISTENT (4) loops the sound until the rider taps/dismisses = alarm.
+NotificationDetails _riderAlarmDetails(String title, String body) => NotificationDetails(
+      android: AndroidNotificationDetails(
+        kRiderAlarmChannel.id,
+        kRiderAlarmChannel.name,
+        channelDescription: kRiderAlarmChannel.description,
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.call,
+        fullScreenIntent: true,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList(const [0, 600, 300, 600, 300, 600]),
+        additionalFlags: Int32List.fromList(<int>[4]),
+        icon: '@mipmap/ic_launcher',
+        color: const Color(0xFF16A34A),
+        styleInformation: BigTextStyleInformation(body, contentTitle: title),
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      ),
+    );
+
+bool _isRiderAssignment(Map<String, dynamic> data) =>
+    data['type'] == 'RIDER_ASSIGNED' ||
+    data['event'] == 'RIDER_ASSIGNED' ||
+    (data['route']?.toString().contains('/deliveries/') ?? false);
+
+// Fixed id so a repeated alarm replaces the previous one instead of stacking.
+const int _kRiderAlarmId = 99001;
 
 /// Background / terminated message handler — must be a top-level function.
 /// For messages WITH a notification block, the OS shows them automatically.
@@ -26,6 +74,18 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
   );
   final androidPlugin =
       plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+  // New delivery → full-screen looping ALARM, even when terminated.
+  if (_isRiderAssignment(message.data)) {
+    await androidPlugin?.createNotificationChannel(kRiderAlarmChannel);
+    await plugin.show(
+      _kRiderAlarmId, title, body,
+      _riderAlarmDetails(title, body),
+      payload: message.data['route'],
+    );
+    return;
+  }
+
   await androidPlugin?.createNotificationChannel(const AndroidNotificationChannel(
     'rider_high', 'Rider Alerts', importance: Importance.high, playSound: true,
   ));
@@ -102,6 +162,9 @@ class NotificationService {
       enableVibration: true,
     ));
 
+    // Dedicated loud alarm channel for new delivery assignments.
+    await androidPlugin?.createNotificationChannel(kRiderAlarmChannel);
+
     const initSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(
@@ -129,6 +192,17 @@ class NotificationService {
 
   static void _handleForegroundMessage(RemoteMessage message) {
     final notif = message.notification;
+
+    // New delivery → loud full-screen alarm instead of a normal notification.
+    if (_isRiderAssignment(message.data)) {
+      showAssignmentAlarm(
+        title: message.data['title'] ?? notif?.title ?? 'New delivery assigned',
+        body: message.data['body'] ?? notif?.body ?? '',
+        route: message.data['route'],
+      );
+      return;
+    }
+
     if (notif != null) {
       _showLocalNotification(
         id: notif.hashCode,
@@ -142,6 +216,24 @@ class NotificationService {
       body: notif?.body ?? message.data['body'] ?? '',
       route: message.data['route'],
     );
+  }
+
+  /// Fire the loud, full-screen, looping new-delivery alarm. Called from the
+  /// FCM handler and from the delivery socket (`delivery:new`) so the rider is
+  /// alerted the instant an order is assigned, in any app state.
+  static Future<void> showAssignmentAlarm({
+    required String title,
+    required String body,
+    String? route,
+  }) async {
+    await _localNotifs.show(
+      _kRiderAlarmId,
+      title,
+      body,
+      _riderAlarmDetails(title, body),
+      payload: route,
+    );
+    _showInAppBanner(title: title, body: body, route: route);
   }
 
   static Future<void> _showLocalNotification({

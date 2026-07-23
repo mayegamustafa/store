@@ -1,11 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TrackingGateway } from '../tracking/tracking.gateway';
 import { DeliveryStatus, OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class DeliveryService {
-  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private tracking: TrackingGateway,
+  ) {}
 
   private orderStatusForDelivery(status: DeliveryStatus): OrderStatus {
     switch (status) {
@@ -150,20 +155,48 @@ export class DeliveryService {
       update: { riderId, status: 'ASSIGNED' },
     });
 
-    // Notify the assigned rider (push + in-app)
+    // Notify the assigned rider — full-screen ALARM push + in-app + realtime socket
     const rider = await this.prisma.riderProfile.findUnique({
       where: { id: riderId },
       select: { userId: true },
     });
     if (rider?.userId) {
+      const title = 'New delivery assigned 🚨';
+      const body = `You've been assigned order ${order.orderNumber}. Open the app to accept.`;
+      const route = '/deliveries/' + delivery.id;
+
+      // In-app record + SMS fallback (the alarm itself is the data push below).
       void this.notifications
         .sendToUser(rider.userId, 'RIDER_ASSIGNED' as any,
-          { order_number: order.orderNumber, order_id: order.id,
-            title: 'New delivery assigned',
-            body: `You've been assigned order ${order.orderNumber}. Open the app to accept.` },
-          { channels: ['PUSH', 'IN_APP'] as any, route: '/deliveries/' + delivery.id,
+          { order_number: order.orderNumber, order_id: order.id, title, body },
+          { channels: ['IN_APP'] as any, route,
             fallbackSms: `TotalStore: new delivery ${order.orderNumber} assigned to you.` })
         .catch(() => null);
+
+      // Data-only push → the rider app renders a full-screen, looping alarm
+      // even when backgrounded / terminated.
+      const riderUser = await this.prisma.user
+        .findUnique({ where: { id: rider.userId }, select: { fcmToken: true } })
+        .catch(() => null);
+      if (riderUser?.fcmToken) {
+        void this.notifications
+          .sendRiderAssignmentPush(riderUser.fcmToken, {
+            title, body, route, orderId: order.id, orderNumber: order.orderNumber,
+          })
+          .catch(() => null);
+      }
+
+      // Realtime event so a foreground app alarms instantly (no push latency).
+      try {
+        this.tracking.notifyRiderNewDelivery(riderId, {
+          deliveryId: delivery.id,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          title,
+          body,
+          route,
+        });
+      } catch { /* gateway not ready — push covers it */ }
     }
 
     // Update order status to SHIPPED
