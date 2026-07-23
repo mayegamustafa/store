@@ -14,7 +14,10 @@ class UpdateService {
   static const String _versionUrl = 'https://totalstoreug.com/api/v1/config/public';
   static const String _appKey = 'buyer';
 
-  static Future<void> checkForUpdate(BuildContext context) async {
+  /// [manual] = true when the shopper taps "Check for updates" — then we also
+  /// show feedback when already up to date or when the check fails. Auto
+  /// (startup) checks stay silent unless an update is available.
+  static Future<void> checkForUpdate(BuildContext context, {bool manual = false}) async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version; // e.g. "2.0.0"
@@ -23,22 +26,26 @@ class UpdateService {
       dio.options.connectTimeout = const Duration(seconds: 5);
       dio.options.receiveTimeout = const Duration(seconds: 5);
       final response = await dio.get(_versionUrl);
-      if (response.statusCode != 200) return;
+      if (response.statusCode != 200) {
+        if (manual) _snack(context, 'Could not check for updates. Try again.');
+        return;
+      }
 
       final data = response.data;
       final apps = data is Map ? (data['apps'] ?? data) : null;
       final appData = apps is Map ? apps[_appKey] : null;
-      if (appData == null) return;
-
-      final latestVersion = appData['version'] as String;
+      final latestVersion = appData?['version'] as String? ?? '';
       final downloadUrl =
-          (appData['downloadUrl'] ?? appData['url'] ?? '') as String;
-      if (latestVersion.isEmpty || downloadUrl.isEmpty) return;
-      final forceUpdate = appData['forceUpdate'] == true;
-      final minVersion = appData['minVersion'] as String? ?? '0.0.0';
-      final changelog = appData['changelog'] as String? ?? '';
+          (appData?['downloadUrl'] ?? appData?['url'] ?? '') as String;
+      if (latestVersion.isEmpty) {
+        if (manual) _snack(context, "You're on the latest version ($currentVersion)");
+        return;
+      }
+      final forceUpdate = appData?['forceUpdate'] == true;
+      final minVersion = appData?['minVersion'] as String? ?? '0.0.0';
+      final changelog = appData?['changelog'] as String? ?? '';
 
-      if (_isNewerVersion(latestVersion, currentVersion)) {
+      if (_isNewerVersion(latestVersion, currentVersion) && downloadUrl.isNotEmpty) {
         final mustUpdate = forceUpdate || _isNewerVersion(minVersion, currentVersion);
         if (!context.mounted) return;
         _showUpdateDialog(
@@ -50,10 +57,17 @@ class UpdateService {
           changelog: changelog,
           forceUpdate: mustUpdate,
         );
+      } else if (manual) {
+        _snack(context, "You're on the latest version ($currentVersion)");
       }
     } catch (_) {
-      // Silently fail — update check is non-critical
+      if (manual) _snack(context, 'Update check failed. Try again.');
     }
+  }
+
+  static void _snack(BuildContext context, String msg) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   /// Compare semver strings. Returns true if [a] > [b].

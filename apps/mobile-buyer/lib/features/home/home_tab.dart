@@ -72,6 +72,9 @@ class _HomeTabState extends State<HomeTab> {
                   if (provider.flashSales.isNotEmpty)
                     _buildFlashSaleSection(provider.flashSales.first),
 
+                  // Promotions strip (non-intrusive, auto-scrolling)
+                  _buildPromoStrip(),
+
                   // Featured products
                   if (provider.featured.isNotEmpty)
                     _buildFeaturedSection(provider.featured),
@@ -169,6 +172,67 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// A subtle, auto-scrolling row of promotional highlights. Sits mid-page and
+  /// moves on its own so it draws attention without interrupting browsing.
+  Widget _buildPromoStrip() {
+    final promos = <Map<String, dynamic>>[
+      {'icon': Icons.local_shipping_rounded, 'title': 'Free delivery', 'sub': 'On orders over UGX 150,000', 'colors': const [Color(0xFF0EA5E9), Color(0xFF2563EB)]},
+      {'icon': Icons.bolt_rounded, 'title': 'Flash deals daily', 'sub': 'Up to 70% off', 'colors': const [Color(0xFFF59E0B), Color(0xFFEF4444)]},
+      {'icon': Icons.verified_rounded, 'title': 'Verified sellers', 'sub': 'Shop with confidence', 'colors': const [Color(0xFF10B981), Color(0xFF059669)]},
+      {'icon': Icons.payments_rounded, 'title': 'Pay on delivery', 'sub': 'Cash or Mobile Money', 'colors': const [Color(0xFF8B5CF6), Color(0xFF6D28D9)]},
+    ];
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 8),
+        child: CarouselSlider(
+          items: promos.map((p) {
+            return GestureDetector(
+              onTap: () => Navigator.of(context).pushNamed('/products'),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: (p['colors'] as List<Color>)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(p['icon'] as IconData, color: Colors.white, size: 26),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p['title'] as String,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(p['sub'] as String,
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+          options: CarouselOptions(
+            height: 66,
+            viewportFraction: 0.74,
+            autoPlay: true,
+            autoPlayInterval: const Duration(seconds: 3),
+            autoPlayAnimationDuration: const Duration(milliseconds: 700),
+            enableInfiniteScroll: true,
+            padEnds: false,
+          ),
         ),
       ),
     );

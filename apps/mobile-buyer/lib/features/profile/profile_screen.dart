@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../core/api/api_service.dart';
 import '../../core/services/app_config.dart';
+import '../../core/services/update_service.dart';
 import '../../core/theme.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/models/address.dart';
@@ -190,6 +191,9 @@ class ProfileScreen extends StatelessWidget {
           }),
           _MenuItem(Icons.chat_outlined, 'Live Chat', () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveChatScreen()));
+          }),
+          _MenuItem(Icons.system_update_rounded, 'Check for updates', () {
+            UpdateService.checkForUpdate(context, manual: true);
           }),
           _MenuItem(Icons.info_outline_rounded, 'About', () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()));

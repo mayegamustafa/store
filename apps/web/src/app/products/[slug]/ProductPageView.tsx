@@ -244,6 +244,23 @@ export default function ProductPageView() {
                   </button>
                 ))}
               </div>
+
+              {/* Product video (promo / demo) */}
+              {(p.adVideoUrl || p.videoUrl) && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-4 bg-sky-500 rounded-full" /> Product Video
+                  </p>
+                  <video
+                    src={p.adVideoUrl || p.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full rounded-xl bg-black aspect-video"
+                  />
+                </div>
+              )}
+
               <div className="mt-4 hidden lg:block">
                 <AdBanner placement="product_gallery_bottom" variant="card" className="h-24" />
               </div>

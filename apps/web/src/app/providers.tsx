@@ -18,7 +18,16 @@ function DynamicGoogleProvider({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: { queries: { staleTime: 60 * 1000, retry: 1 } },
+    // Keep data fresh without manual reloads: refetch when the tab regains
+    // focus and when the network reconnects.
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000,
+        retry: 1,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+      },
+    },
   }));
 
   // Load the account wishlist once on mount (merges any guest items too).

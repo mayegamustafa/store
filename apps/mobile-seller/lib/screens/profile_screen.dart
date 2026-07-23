@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
+import '../core/services/update_service.dart';
 import '../providers/auth_provider.dart';
 import '../core/i18n/app_i18n.dart';
 
@@ -106,6 +107,13 @@ class ProfileScreen extends StatelessWidget {
                   title: const Text('Help & Support'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {},
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.system_update_rounded),
+                  title: const Text('Check for updates'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => UpdateService.checkForUpdate(context, manual: true),
                 ),
                 const Divider(height: 1),
                 ListTile(

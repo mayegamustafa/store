@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -57,6 +58,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Product link copied — paste it anywhere to share')),
     );
+  }
+
+  Future<void> _watchVideo(Product product) async {
+    final url = product.adVideoUrl ?? product.videoUrl;
+    if (url == null || url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Future<void> _toggleWishlist(Product product) async {
@@ -549,6 +560,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             );
           },
         ),
+        // Tap-to-play overlay when the product has a promo/demo video.
+        if ((product.adVideoUrl ?? product.videoUrl)?.isNotEmpty ?? false)
+          Center(
+            child: GestureDetector(
+              onTap: () => _watchVideo(product),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 44),
+              ),
+            ),
+          ),
         if (images.length > 1)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),

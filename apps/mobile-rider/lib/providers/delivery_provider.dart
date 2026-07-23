@@ -6,9 +6,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api/api_service.dart';
 import '../core/offline_cache.dart';
 
-class DeliveryProvider extends ChangeNotifier {
+class DeliveryProvider extends ChangeNotifier with WidgetsBindingObserver {
   final _api = ApiService();
   final _storage = const FlutterSecureStorage();
+
+  DeliveryProvider() {
+    // Watch app lifecycle so we can re-assert the connection when the rider
+    // brings the app back to the foreground.
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   List<dynamic> _deliveries = [];
   bool _isOnline = false;
@@ -44,7 +50,40 @@ class DeliveryProvider extends ChangeNotifier {
   String? get activeDeliveryId => _activeDeliveryId;
 
   /// Call once after login to cache the rider profile ID for socket events.
-  void setRiderId(String? id) => _riderId = id;
+  /// Also restores the rider's online presence so the app comes back online
+  /// automatically on every launch (the driver app should stay online).
+  void setRiderId(String? id) {
+    _riderId = id;
+    if (id != null) restoreOnlineState();
+  }
+
+  /// Bring the rider back online on launch. Defaults to online unless the rider
+  /// previously chose to go offline (persisted across restarts).
+  Future<void> restoreOnlineState() async {
+    if (_isOnline) return; // already online
+    final saved = await _storage.read(key: 'riderOnline');
+    final shouldBeOnline = saved == null ? true : saved == 'true';
+    if (!shouldBeOnline) return;
+    _isOnline = true;
+    await _api.toggleOnline(true);
+    await _connectSocket();
+    _startLocationTracking();
+    notifyListeners();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isOnline) {
+      // Reconnect if the socket dropped while backgrounded, and make sure GPS
+      // is streaming again.
+      if (_socket == null || !(_socket?.connected ?? false)) {
+        _connectSocket();
+      } else if (_riderId != null) {
+        _socket?.emit('rider:online', {'riderId': _riderId});
+      }
+      if (_locationSubscription == null) _startLocationTracking();
+    }
+  }
 
   Future<void> loadDeliveries() async {
     _loading = true; notifyListeners();
@@ -80,6 +119,8 @@ class DeliveryProvider extends ChangeNotifier {
 
   Future<void> toggleOnline() async {
     _isOnline = !_isOnline;
+    // Remember the choice so the app restores the same state on next launch.
+    await _storage.write(key: 'riderOnline', value: _isOnline.toString());
     await _api.toggleOnline(_isOnline);
     if (_isOnline) { await _connectSocket(); _startLocationTracking(); }
     else {
@@ -91,16 +132,30 @@ class DeliveryProvider extends ChangeNotifier {
   }
 
   Future<void> _connectSocket() async {
+    // Reuse an existing socket — just make sure it's connected.
+    if (_socket != null) {
+      if (!(_socket?.connected ?? false)) _socket!.connect();
+      return;
+    }
     final token = await _storage.read(key: 'riderAccessToken');
     if (token == null) return;
     _socket = io.io('https://totalstoreug.com/tracking', io.OptionBuilder()
         .setTransports(['polling', 'websocket'])
+        // Keep the rider online through flaky mobile networks: reconnect
+        // indefinitely with a capped backoff.
+        .enableReconnection()
+        .setReconnectionAttempts(1 << 30)
+        .setReconnectionDelay(2000)
+        .setReconnectionDelayMax(10000)
         .setAuth({'token': token})
         .build());
+    // `connect` fires on the initial connection AND on every reconnection, so
+    // re-asserting rider:online here keeps presence accurate after drops.
     _socket!.onConnect((_) {
       debugPrint('Rider socket connected');
       if (_riderId != null) _socket!.emit('rider:online', {'riderId': _riderId});
     });
+    _socket!.onDisconnect((_) => debugPrint('Rider socket disconnected — will auto-reconnect'));
   }
 
   /// Open the position stream and broadcast on movement. The OS-level
@@ -250,6 +305,7 @@ class DeliveryProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _stopLocationTracking();
     _socket?.disconnect();
     super.dispose();

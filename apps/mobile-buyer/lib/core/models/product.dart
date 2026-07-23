@@ -15,6 +15,7 @@ class Product {
   final List<String> images;
   final String? thumbnailUrl;
   final String? videoUrl;
+  final String? adVideoUrl;
   final List<String> tags;
   final double rating;
   final int reviewCount;
@@ -44,6 +45,7 @@ class Product {
     this.images = const [],
     this.thumbnailUrl,
     this.videoUrl,
+    this.adVideoUrl,
     this.tags = const [],
     this.rating = 0,
     this.reviewCount = 0,
@@ -102,6 +104,7 @@ class Product {
       images: json['images'] != null ? List<String>.from(json['images']) : [],
       thumbnailUrl: json['thumbnailUrl'],
       videoUrl: json['videoUrl'],
+      adVideoUrl: json['adVideoUrl'],
       tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
       rating: safeDouble(json['rating']),
       reviewCount: json['reviewCount'] ?? 0,

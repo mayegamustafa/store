@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/delivery_provider.dart';
 import '../../services/biometric_service.dart';
+import '../../services/update_service.dart';
 import '../../core/i18n/app_i18n.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -315,6 +316,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _SectionCard(
                     title: 'App',
                     items: [
+                      _SectionItem(
+                        icon: Icons.system_update_rounded,
+                        iconBg: const Color(0xFF16A34A).withOpacity(0.1),
+                        iconColor: const Color(0xFF16A34A),
+                        title: 'Check for updates',
+                        subtitle: 'Get the latest version',
+                        onTap: () => UpdateService.checkForUpdate(context, manual: true),
+                      ),
                       _SectionItem(
                         icon: Icons.info_outline_rounded,
                         iconBg: AppTheme.textTertiary.withOpacity(0.1),
