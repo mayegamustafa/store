@@ -257,86 +257,87 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        desiredAccuracy: LocationAccuracy.best,
         timeLimit: const Duration(seconds: 15),
       );
       _latitude = position.latitude;
       _longitude = position.longitude;
 
-      bool resolved = false;
+      String street = '', city = '', district = '', region = '';
+
+      // 1) Google reverse-geocoding — most accurate when a Maps key is set.
+      // No result_type filter, so ALL admin-area components come back and we
+      // can fill district/region reliably (esp. for Ugandan addresses).
       final googleKey = AppConfig.instance.googleMapsApiKey;
       if (googleKey.isNotEmpty) {
         try {
           final resp = await Dio(
-                  BaseOptions(
-                      connectTimeout: const Duration(seconds: 8)))
-              .get(
-                  'https://maps.googleapis.com/maps/api/geocode/json',
+                  BaseOptions(connectTimeout: const Duration(seconds: 8)))
+              .get('https://maps.googleapis.com/maps/api/geocode/json',
                   queryParameters: {
-                'latlng':
-                    '${position.latitude},${position.longitude}',
+                'latlng': '${position.latitude},${position.longitude}',
                 'key': googleKey,
-                'result_type':
-                    'street_address|route|sublocality|locality',
               });
           if (resp.data?['status'] == 'OK') {
             final results = resp.data['results'] as List?;
             if (results != null && results.isNotEmpty) {
-              final components =
-                  results[0]['address_components'] as List;
-              String street = '', city = '', district = '', region = '';
-              for (final c in components) {
-                final types = List<String>.from(c['types'] as List);
-                final name = c['long_name'] as String;
-                if (types.contains('route')) street = name;
-                else if (types.contains('street_number') &&
-                    street.isEmpty) street = name;
-                else if (types.contains('sublocality_level_1') ||
-                    types.contains('neighborhood') ||
-                    types.contains('sublocality')) {
-                  if (street.isEmpty) street = name;
+              final components = results[0]['address_components'] as List;
+              // First matching component for any of the wanted types (in order).
+              String pick(List<String> wanted) {
+                for (final want in wanted) {
+                  for (final c in components) {
+                    final types = List<String>.from(c['types'] as List);
+                    if (types.contains(want)) return c['long_name'] as String;
+                  }
                 }
-                if (types.contains('locality') ||
-                    types.contains('administrative_area_level_3'))
-                  city = name;
-                if (types.contains('administrative_area_level_2'))
-                  district = name;
-                if (types.contains('administrative_area_level_1'))
-                  region = name;
+                return '';
               }
-              if (street.isNotEmpty || city.isNotEmpty) {
-                _addressLine1Ctrl.text =
-                    street.isNotEmpty ? street : city;
-                _cityCtrl.text = city;
-                _districtCtrl.text = district;
-                _regionCtrl.text = region;
-                resolved = true;
+              final streetNumber = pick(['street_number']);
+              final route = pick(['route']);
+              street = [streetNumber, route].where((s) => s.isNotEmpty).join(' ');
+              if (street.isEmpty) {
+                street = pick(['sublocality_level_1', 'sublocality',
+                    'neighborhood', 'premise']);
               }
+              city = pick(['locality', 'postal_town',
+                  'administrative_area_level_3', 'administrative_area_level_2']);
+              district = pick(['administrative_area_level_2',
+                  'administrative_area_level_3']);
+              region = pick(['administrative_area_level_1']);
             }
           }
         } catch (_) {}
       }
 
-      if (!resolved) {
+      // 2) On-device geocoding — fill any fields Google didn't return.
+      if (street.isEmpty || city.isEmpty || district.isEmpty || region.isEmpty) {
         try {
           final placemarks = await placemarkFromCoordinates(
               position.latitude, position.longitude);
           if (placemarks.isNotEmpty) {
             final p = placemarks.first;
-            final streetParts = [p.street, p.subLocality]
-                .where((s) => s != null && s!.isNotEmpty)
-                .join(', ');
-            _addressLine1Ctrl.text = streetParts.isNotEmpty
-                ? streetParts
-                : (p.locality ?? '');
-            _cityCtrl.text =
-                p.locality ?? p.subAdministrativeArea ?? '';
-            _districtCtrl.text =
-                p.subAdministrativeArea ?? p.administrativeArea ?? '';
-            _regionCtrl.text = p.administrativeArea ?? '';
+            if (street.isEmpty) {
+              street = [p.street, p.subLocality]
+                  .where((s) => s != null && s.isNotEmpty)
+                  .join(', ');
+            }
+            if (city.isEmpty) city = p.locality ?? p.subAdministrativeArea ?? '';
+            if (district.isEmpty) district = p.subAdministrativeArea ?? '';
+            if (region.isEmpty) region = p.administrativeArea ?? '';
           }
         } catch (_) {}
       }
+
+      setState(() {
+        if (street.isNotEmpty) {
+          _addressLine1Ctrl.text = street;
+        } else if (_addressLine1Ctrl.text.trim().isEmpty && city.isNotEmpty) {
+          _addressLine1Ctrl.text = city;
+        }
+        if (city.isNotEmpty) _cityCtrl.text = city;
+        if (district.isNotEmpty) _districtCtrl.text = district;
+        if (region.isNotEmpty) _regionCtrl.text = region;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

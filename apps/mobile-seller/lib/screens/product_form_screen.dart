@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,13 +19,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final _brandCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _stockCtrl = TextEditingController();
   String? _categoryId;
+  String _condition = 'NEW';
+  static const _conditions = ['NEW', 'USED', 'REFURBISHED'];
   List<Map<String, dynamic>> _categories = [];
   List<String> _imageUrls = [];
   bool _loading = false;
   bool _fetching = false;
+  bool _aiLoading = false;
 
   bool get isEdit => widget.productId != null;
 
@@ -71,6 +74,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       if (data != null && mounted) {
         _nameCtrl.text = data['name'] ?? '';
         _descCtrl.text = data['description'] ?? '';
+        _brandCtrl.text = data['brand'] ?? '';
+        _condition = _conditions.contains(data['condition']) ? data['condition'] : 'NEW';
         _priceCtrl.text = (data['basePrice'] ?? data['price'] ?? '').toString();
         _stockCtrl.text = (data['stock'] ?? '').toString();
         _categoryId = data['categoryId'] ?? data['category']?['id'];
@@ -118,6 +123,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final data = {
       'name': _nameCtrl.text.trim(),
       'description': _descCtrl.text.trim(),
+      'brand': _brandCtrl.text.trim(),
+      'condition': _condition,
       'basePrice': double.tryParse(_priceCtrl.text) ?? 0,
       'stock': int.tryParse(_stockCtrl.text) ?? 0,
       'categoryId': _categoryId,
@@ -137,10 +144,46 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
+  /// Ask the backend (OpenAI-backed, with template fallback) to write the
+  /// description so sellers don't have to. Uses name + brand + category +
+  /// condition for accuracy.
+  Future<void> _generateDescription() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter a product name first')));
+      return;
+    }
+    setState(() => _aiLoading = true);
+    try {
+      final category = _categories.firstWhere(
+        (c) => c['id'] == _categoryId,
+        orElse: () => const {},
+      )['name'];
+      final res = await ApiService().dio.post('/products/ai-description', data: {
+        'name': name,
+        if (_brandCtrl.text.trim().isNotEmpty) 'brand': _brandCtrl.text.trim(),
+        if (category != null) 'category': category,
+        'condition': _condition,
+      });
+      final data = ApiService().extractData(res);
+      final desc = (data is Map ? data['description'] : null) as String?;
+      if (desc == null || desc.isEmpty) throw Exception('empty');
+      setState(() => _descCtrl.text = desc);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not generate description')));
+      }
+    }
+    if (mounted) setState(() => _aiLoading = false);
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
     _descCtrl.dispose();
+    _brandCtrl.dispose();
     _priceCtrl.dispose();
     _stockCtrl.dispose();
     super.dispose();
@@ -219,11 +262,59 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                   const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('Description',
+                          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: _aiLoading ? null : _generateDescription,
+                        icon: _aiLoading
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.auto_awesome, size: 16),
+                        label: Text(_aiLoading ? 'Writing…' : 'AI Auto-fill'),
+                        style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 8)),
+                      ),
+                    ],
+                  ),
                   TextFormField(
                     controller: _descCtrl,
-                    decoration:
-                        const InputDecoration(labelText: 'Description'),
+                    decoration: const InputDecoration(
+                        hintText: 'Describe the product, or tap AI Auto-fill'),
                     maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _brandCtrl,
+                          decoration:
+                              const InputDecoration(labelText: 'Brand (optional)'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _condition,
+                          decoration:
+                              const InputDecoration(labelText: 'Condition'),
+                          items: _conditions
+                              .map((c) => DropdownMenuItem<String>(
+                                    value: c,
+                                    child: Text(c[0] + c.substring(1).toLowerCase()),
+                                  ))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _condition = v ?? 'NEW'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   Row(

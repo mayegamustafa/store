@@ -21,7 +21,10 @@ import 'i18n/app_i18n.dart';
 class AppRouter {
   static final _shellKey = GlobalKey<NavigatorState>();
 
-  static GoRouter router(AuthProvider auth) => GoRouter(
+  /// Exposed so notification taps can navigate from outside the widget tree.
+  static GoRouter? instance;
+
+  static GoRouter router(AuthProvider auth) => instance = GoRouter(
         initialLocation: '/splash',
         redirect: (context, state) {
           final loggedIn = auth.isAuthenticated;

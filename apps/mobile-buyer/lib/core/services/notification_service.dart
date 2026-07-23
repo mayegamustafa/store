@@ -5,6 +5,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
 
+/// Global navigator key so notification taps can navigate from outside the
+/// widget tree. Wired into MaterialApp in main.dart.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 /// Top-level handler for background messages (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -81,8 +85,16 @@ class NotificationService {
     // Listen to foreground messages
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
 
-    // Handle notification tap when app is in background/terminated
+    // Handle notification tap when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen(_onNotificationOpenedApp);
+
+    // Handle the tap that cold-started the app from a terminated state.
+    // Delay so the splash screen has a chance to settle into /main first.
+    final initialMessage = await _fcm.getInitialMessage();
+    if (initialMessage != null) {
+      Future.delayed(const Duration(seconds: 3),
+          () => _navigateFromData(initialMessage.data));
+    }
 
     // Token registration happens after login (see registerTokenAfterLogin())
     // Listen for token refresh — will only send if user is already logged in
@@ -139,11 +151,46 @@ class NotificationService {
   }
 
   void _onNotificationTap(NotificationResponse response) {
-    // Can navigate based on payload data
-    debugPrint('[Notification] Tapped: ${response.payload}');
+    // Foreground local-notification tap — payload is the encoded message data.
+    if (response.payload == null || response.payload!.isEmpty) return;
+    try {
+      final data = Map<String, dynamic>.from(jsonDecode(response.payload!) as Map);
+      _navigateFromData(data);
+    } catch (_) {}
   }
 
   void _onNotificationOpenedApp(RemoteMessage message) {
-    debugPrint('[Notification] Opened app from: ${message.data}');
+    _navigateFromData(message.data);
+  }
+
+  /// Resolve the destination from the push payload and navigate there.
+  /// The server sends a `route` (e.g. "/orders/123" or "/orders/123/track")
+  /// and/or an `event` + `order_id`. Falls back to the notifications list.
+  void _navigateFromData(Map<String, dynamic> data) {
+    final route = _resolveRoute(data);
+    final nav = navigatorKey.currentState;
+    if (nav == null || route == null) return;
+    nav.pushNamed(route);
+  }
+
+  String? _resolveRoute(Map<String, dynamic> data) {
+    var route = (data['route'] ?? '').toString().trim();
+    final event = (data['event'] ?? '').toString();
+    final orderId = (data['order_id'] ?? data['orderId'] ?? '').toString();
+
+    // Derive a route from the event when the server didn't send one.
+    if (route.isEmpty && orderId.isNotEmpty) {
+      route = (event == 'ORDER_OUT_FOR_DELIVERY' || event == 'ORDER_SHIPPED')
+          ? '/orders/$orderId/track'
+          : '/orders/$orderId';
+    }
+    if (route.isEmpty) return '/notifications';
+
+    // The API uses plural /orders and /deliveries; this app registers the
+    // singular /order/:id (and /order/:id/track) routes.
+    route = route
+        .replaceFirst('/orders/', '/order/')
+        .replaceFirst('/deliveries/', '/order/');
+    return route.startsWith('/') ? route : '/$route';
   }
 }

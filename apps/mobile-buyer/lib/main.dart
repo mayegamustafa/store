@@ -61,6 +61,7 @@ class TotalStoreApp extends StatelessWidget {
       child: MaterialApp(
         title: 'TotalStore',
         debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
         theme: AppTheme.buildTheme(),
         home: const SplashScreen(),
         routes: {

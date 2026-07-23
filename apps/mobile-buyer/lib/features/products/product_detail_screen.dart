@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -6,10 +8,12 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../../core/theme.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/models/models.dart';
+import '../../core/services/app_config.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/product_card.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
+import '../wishlist/wishlist_provider.dart';
 import 'products_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -21,12 +25,48 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final PageController _imagePageController = PageController();
+  Timer? _autoSlideTimer;
+  int _currentImage = 0;
   Product? _product;
   List<Product> _related = [];
   List<Review> _reviews = [];
   bool _isLoading = true;
   int _quantity = 1;
   String? _selectedVariantId;
+
+  /// Auto-advance the image gallery like a slideshow (buyer doesn't have to
+  /// swipe manually). Loops; no-op for single-image products.
+  void _startAutoSlide(int count) {
+    _autoSlideTimer?.cancel();
+    if (count < 2) return;
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_imagePageController.hasClients) return;
+      final next = (_currentImage + 1) % count;
+      _imagePageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  Future<void> _shareProduct(Product product) async {
+    final url = '${AppConfig.instance.uploadBaseUrl}/products/${product.slug}';
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Product link copied — paste it anywhere to share')),
+    );
+  }
+
+  Future<void> _toggleWishlist(Product product) async {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isAuthenticated) {
+      Navigator.pushNamed(context, '/login');
+      return;
+    }
+    await context.read<WishlistProvider>().toggle(product.id);
+  }
 
   @override
   void didChangeDependencies() {
@@ -54,6 +94,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
 
     if (_product != null) {
+      final imageCount = _product!.images.isNotEmpty
+          ? _product!.images.length
+          : (_product!.thumbnailUrl != null ? 1 : 0);
+      _startAutoSlide(imageCount);
+      // Load saved wishlist so the heart reflects the real state.
+      if (context.read<AuthProvider>().isAuthenticated) {
+        context.read<WishlistProvider>().fetch();
+      }
       final reviews = await provider.fetchReviews(_product!.id);
       if (mounted) setState(() => _reviews = reviews);
     }
@@ -61,6 +109,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   void dispose() {
+    _autoSlideTimer?.cancel();
     _imagePageController.dispose();
     super.dispose();
   }
@@ -103,9 +152,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               () => Navigator.pop(context),
             ),
             actions: [
-              _circleButton(Icons.share_outlined, () {}),
+              _circleButton(Icons.share_outlined, () => _shareProduct(product)),
               const SizedBox(width: 8),
-              _circleButton(Icons.favorite_outline_rounded, () {}),
+              _circleButton(
+                context.watch<WishlistProvider>().isWishlisted(product.id)
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_outline_rounded,
+                () => _toggleWishlist(product),
+                iconColor: context.watch<WishlistProvider>().isWishlisted(product.id)
+                    ? Colors.redAccent
+                    : null,
+              ),
               const SizedBox(width: 12),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -478,6 +535,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         PageView.builder(
           controller: _imagePageController,
           itemCount: images.length,
+          onPageChanged: (i) => _currentImage = i,
           itemBuilder: (context, index) {
             return CachedNetworkImage(
               imageUrl: resolveImageUrl(images[index]),
@@ -509,7 +567,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
+  Widget _circleButton(IconData icon, VoidCallback onTap, {Color? iconColor}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -521,7 +579,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           shape: BoxShape.circle,
           boxShadow: [AppTheme.cardShadow],
         ),
-        child: Icon(icon, size: 20, color: AppTheme.textPrimary),
+        child: Icon(icon, size: 20, color: iconColor ?? AppTheme.textPrimary),
       ),
     );
   }
